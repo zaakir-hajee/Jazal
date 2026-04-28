@@ -43,6 +43,12 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <TabIcon emoji="🏆" label="Ranking" focused={focused} />,
         }}
       />
+      <Tabs.Screen
+        name="hajj"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🕋" label="Hajj" focused={focused} />,
+        }}
+      />
     </Tabs>
   );
 }
