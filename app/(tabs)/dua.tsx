@@ -5,6 +5,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { DUAA_CATEGORIES, TRANSLATIONS } from '@/constants/data';
 import { speakText, resumeAudioContext, VOICE_OPTIONS } from '@/lib/sound';
+import { useLang } from '@/lib/lang';
 
 const GOLD = '#c4a46a';
 const MUTED = '#6a7a6a';
@@ -13,7 +14,7 @@ const BG_CARD = 'rgba(196,164,106,0.05)';
 const BORDER = 'rgba(196,164,106,0.12)';
 
 export default function DuaScreen() {
-  const [lang, setLang] = useState('en');
+  const { lang, setLang } = useLang();
   const [selectedCategory, setSelectedCategory] = useState<typeof DUAA_CATEGORIES[0] | null>(null);
   const [voiceOpt, setVoiceOpt] = useState('arabic');
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);

@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { TRANSLATIONS } from '@/constants/data';
+import { useLang } from '@/lib/lang';
 
 const GOLD = '#c4a46a';
 const MUTED = '#6a7a6a';
@@ -29,7 +30,7 @@ function getTodayString() { return new Date().toISOString().slice(0, 10); }
 
 export default function RankingScreen() {
   const { user, signIn, signUp } = useAuth();
-  const [lang] = useState('en');
+  const { lang } = useLang();
   const [mode, setMode] = useState<'percentage' | 'numbers' | 'off'>('percentage');
   const [rankData, setRankData] = useState<RankData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([]);

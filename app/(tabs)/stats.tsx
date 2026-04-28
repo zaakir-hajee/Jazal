@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { TRANSLATIONS } from '@/constants/data';
+import { useLang } from '@/lib/lang';
 
 const GOLD = '#c4a46a';
 const MUTED = '#6a7a6a';
@@ -28,7 +29,7 @@ function getWeekDates() {
 
 export default function StatsScreen() {
   const { user, signIn, signUp } = useAuth();
-  const [lang] = useState('en');
+  const { lang } = useLang();
   const [stats, setStats] = useState<DailyStat[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAuth, setShowAuth] = useState(false);

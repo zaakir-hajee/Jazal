@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, Platform,
+  View, Text, StyleSheet, Pressable, ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLang } from '@/lib/lang';
 
 const GOLD = '#c4a46a';
 const MUTED = '#6a7a6a';
@@ -15,14 +16,88 @@ const GREEN_OK = '#4a9a6a';
 
 type Section = 'overview' | 'days' | 'duas' | 'do' | 'avoid' | 'map';
 
-const HAJJ_SECTIONS: { id: Section; icon: string; label: string; labelAr: string }[] = [
-  { id: 'overview', icon: '🕋', label: 'Overview', labelAr: 'نظرة عامة' },
-  { id: 'days', icon: '📅', label: 'Daily Guide', labelAr: 'الجدول اليومي' },
-  { id: 'duas', icon: '🤲', label: "Hajj Du'a", labelAr: 'أدعية الحج' },
-  { id: 'do', icon: '✅', label: 'Things To Do', labelAr: 'ما يجب فعله' },
-  { id: 'avoid', icon: '⛔', label: 'Things To Avoid', labelAr: 'ما يجب تجنبه' },
-  { id: 'map', icon: '🗺️', label: 'Journey Map', labelAr: 'خريطة الرحلة' },
-];
+const HAJJ_T: Record<string, Record<string, string>> = {
+  en: {
+    title: 'Hajj Guide', sub: 'Complete Pilgrimage Companion',
+    secOverview: 'Overview', secDays: 'Daily Guide', secDuas: "Hajj Du'a",
+    secDo: 'Things To Do', secAvoid: 'Things To Avoid', secMap: 'Journey Map',
+    pillarsTitle: 'Pillars of Hajj', wajibatTitle: 'Obligatory Acts (Wajibat)', typesTitle: 'Types of Hajj',
+    daysTitle: 'Day-by-Day Hajj Schedule', duasTitle: "Hajj Du'as",
+    doTitle: 'Things To Do During Hajj', avoidTitle: 'Things To Avoid During Hajj',
+    mapTitle: 'Hajj Journey Map', mapSub: 'A 5-day spiritual journey through the sacred sites',
+    distTitle: 'Approximate Distances', bannerTitle: 'Al-Hajj al-Mabrur',
+    bannerSub: '"There is no reward for Hajj Mabrur except Paradise." — Bukhari & Muslim',
+    stop: 'Stop', ihramProhib: 'Ihram Prohibitions — requires expiation',
+    catIhram: 'Ihram & Intention', catPhysical: 'Physical Preparation',
+    catSpiritual: 'Spiritual Priorities', catPractical: 'Practical Steps',
+    catBehaviour: 'Behaviour & Conduct', catSafety: 'Safety & Health',
+    catIhramAvoid: 'Ihram Prohibitions',
+  },
+  ar: {
+    title: 'دليل الحج', sub: 'الحج المبرور ليس له ثواب إلا الجنة',
+    secOverview: 'نظرة عامة', secDays: 'الجدول اليومي', secDuas: 'أدعية الحج',
+    secDo: 'ما يجب فعله', secAvoid: 'ما يجب تجنبه', secMap: 'خريطة الرحلة',
+    pillarsTitle: 'أركان الحج', wajibatTitle: 'واجبات الحج', typesTitle: 'أنواع الحج',
+    daysTitle: 'الجدول اليومي للحج', duasTitle: 'أدعية الحج',
+    doTitle: 'ما يجب فعله في الحج', avoidTitle: 'ما يجب تجنبه في الحج',
+    mapTitle: 'خريطة رحلة الحج', mapSub: 'رحلة من خمسة أيام تغطي المشاعر المقدسة',
+    distTitle: 'المسافات التقريبية', bannerTitle: 'الحج المبرور',
+    bannerSub: '"الحج المبرور ليس له جزاء إلا الجنة" — البخاري ومسلم',
+    stop: 'محطة', ihramProhib: 'محظورات الإحرام — كفارة واجبة',
+    catIhram: 'الإحرام والنية', catPhysical: 'التحضير الجسدي',
+    catSpiritual: 'الأولويات الروحية', catPractical: 'خطوات عملية',
+    catBehaviour: 'السلوك والتصرف', catSafety: 'السلامة والصحة',
+    catIhramAvoid: 'محظورات الإحرام',
+  },
+  id: {
+    title: 'Panduan Haji', sub: 'Panduan Ibadah Haji Lengkap',
+    secOverview: 'Gambaran', secDays: 'Panduan Harian', secDuas: "Doa Haji",
+    secDo: 'Yang Harus Dilakukan', secAvoid: 'Yang Harus Dihindari', secMap: 'Peta Perjalanan',
+    pillarsTitle: 'Rukun Haji', wajibatTitle: 'Wajib Haji', typesTitle: 'Jenis Haji',
+    daysTitle: 'Jadwal Harian Haji', duasTitle: 'Doa-doa Haji',
+    doTitle: 'Yang Harus Dilakukan Saat Haji', avoidTitle: 'Yang Harus Dihindari Saat Haji',
+    mapTitle: 'Peta Perjalanan Haji', mapSub: 'Perjalanan spiritual 5 hari melalui tempat-tempat suci',
+    distTitle: 'Jarak Perkiraan', bannerTitle: 'Haji Mabrur',
+    bannerSub: '"Tidak ada balasan bagi haji mabrur kecuali surga." — Bukhari & Muslim',
+    stop: 'Perhentian', ihramProhib: 'Larangan Ihram — wajib membayar dam',
+    catIhram: 'Ihram & Niat', catPhysical: 'Persiapan Fisik',
+    catSpiritual: 'Prioritas Spiritual', catPractical: 'Langkah Praktis',
+    catBehaviour: 'Perilaku & Sikap', catSafety: 'Keselamatan & Kesehatan',
+    catIhramAvoid: 'Larangan Ihram',
+  },
+  ms: {
+    title: 'Panduan Haji', sub: 'Panduan Ibadah Haji Lengkap',
+    secOverview: 'Gambaran Keseluruhan', secDays: 'Panduan Harian', secDuas: "Doa Haji",
+    secDo: 'Perkara Yang Perlu Dilakukan', secAvoid: 'Perkara Yang Perlu Dielakkan', secMap: 'Peta Perjalanan',
+    pillarsTitle: 'Rukun Haji', wajibatTitle: 'Wajib Haji', typesTitle: 'Jenis Haji',
+    daysTitle: 'Jadual Harian Haji', duasTitle: 'Doa-doa Haji',
+    doTitle: 'Yang Perlu Dilakukan Semasa Haji', avoidTitle: 'Yang Perlu Dielakkan Semasa Haji',
+    mapTitle: 'Peta Perjalanan Haji', mapSub: 'Perjalanan rohani 5 hari melalui tapak-tapak suci',
+    distTitle: 'Jarak Anggaran', bannerTitle: 'Haji Mabrur',
+    bannerSub: '"Tiada ganjaran bagi haji mabrur melainkan syurga." — Bukhari & Muslim',
+    stop: 'Perhentian', ihramProhib: 'Larangan Ihram — wajib membayar dam',
+    catIhram: 'Ihram & Niat', catPhysical: 'Persediaan Fizikal',
+    catSpiritual: 'Keutamaan Rohani', catPractical: 'Langkah Praktikal',
+    catBehaviour: 'Tingkah Laku & Adab', catSafety: 'Keselamatan & Kesihatan',
+    catIhramAvoid: 'Larangan Ihram',
+  },
+  fil: {
+    title: 'Gabay sa Hajj', sub: 'Kumpletong Gabay sa Paglalakbay ng Haji',
+    secOverview: 'Pangkalahatang-ideya', secDays: 'Araw-araw na Gabay', secDuas: "Mga Du'a ng Hajj",
+    secDo: 'Mga Dapat Gawin', secAvoid: 'Mga Dapat Iwasan', secMap: 'Mapa ng Paglalakbay',
+    pillarsTitle: 'Mga Haligi ng Hajj', wajibatTitle: 'Mga Obligadong Gawa', typesTitle: 'Mga Uri ng Hajj',
+    daysTitle: 'Araw-araw na Iskedyul ng Hajj', duasTitle: "Mga Du'a ng Hajj",
+    doTitle: 'Mga Dapat Gawin sa Hajj', avoidTitle: 'Mga Dapat Iwasan sa Hajj',
+    mapTitle: 'Mapa ng Paglalakbay ng Hajj', mapSub: 'Isang 5-araw na espirituwal na paglalakbay sa mga banal na lugar',
+    distTitle: 'Tinatayang Distansya', bannerTitle: 'Hajj Mabrur',
+    bannerSub: '"Walang gantimpala para sa Hajj Mabrur maliban sa Paraiso." — Bukhari & Muslim',
+    stop: 'Hinto', ihramProhib: 'Mga Ipinagbabawal sa Ihram — nangangailangan ng expiation',
+    catIhram: 'Ihram at Intensyon', catPhysical: 'Pisikal na Paghahanda',
+    catSpiritual: 'Mga Espirituwal na Priyoridad', catPractical: 'Mga Praktikal na Hakbang',
+    catBehaviour: 'Pag-uugali at Pakikitungo', catSafety: 'Kaligtasan at Kalusugan',
+    catIhramAvoid: 'Mga Ipinagbabawal sa Ihram',
+  },
+};
 
 const HAJJ_DAYS = [
   {
@@ -241,28 +316,28 @@ const HAJJ_DUAS = [
 ];
 
 const THINGS_TO_DO = [
-  { cat: 'Ihram & Intention', catAr: 'الإحرام والنية', icon: '🕊️', items: [
+  { catKey: 'catIhram', icon: '🕊️', items: [
     { en: 'Make a sincere intention (niyyah) for Hajj', ar: 'اجعل نيتك خالصة لله في الحج' },
     { en: 'Enter ihram at the designated Miqat', ar: 'أحرم من الميقات المحدد' },
     { en: 'Perform ghusl (ritual bath) before ihram', ar: 'اغتسل قبل الإحرام' },
     { en: 'Wear white ihram garments (men)', ar: 'ارتدِ ثوب الإحرام الأبيض للرجال' },
     { en: 'Recite Talbiyah continuously until stoning Aqabah', ar: 'رَدِّد التلبية باستمرار حتى رمي جمرة العقبة' },
   ]},
-  { cat: 'Physical Preparation', catAr: 'التحضير الجسدي', icon: '💪', items: [
+  { catKey: 'catPhysical', icon: '💪', items: [
     { en: 'Consult a doctor before travelling if you have health conditions', ar: 'استشر طبيبك قبل السفر إذا كنت تعاني من حالة صحية' },
     { en: 'Carry your medications and a copy of prescriptions', ar: 'احتفظ بأدويتك ونسخة من الوصفات الطبية' },
     { en: 'Wear comfortable footwear for extensive walking', ar: 'ارتدِ حذاءً مريحاً للمشي الطويل' },
     { en: 'Stay hydrated — drink Zamzam water often', ar: 'حافظ على رطوبتك — اشرب ماء زمزم كثيراً' },
     { en: 'Use an umbrella for sun protection', ar: 'استخدم مظلة للحماية من الشمس' },
   ]},
-  { cat: 'Spiritual Priorities', catAr: 'الأولويات الروحية', icon: '✨', items: [
+  { catKey: 'catSpiritual', icon: '✨', items: [
     { en: "Make du'a abundantly, especially at Arafah", ar: 'أكثر من الدعاء، خاصة في عرفة' },
     { en: 'Recite dhikr, Quran, and istighfar throughout', ar: 'اذكر الله واقرأ القرآن واستغفره باستمرار' },
     { en: 'Maintain patience and good character at all times', ar: 'حافظ على الصبر وحسن الخلق في جميع الأوقات' },
     { en: 'Help fellow pilgrims — the elderly, disabled, and lost', ar: 'ساعد الحجاج — كبار السن والمعاقين والضائعين' },
     { en: "Seek forgiveness for yourself and your family", ar: 'استغفر لنفسك ولأهلك' },
   ]},
-  { cat: 'Practical Steps', catAr: 'خطوات عملية', icon: '📋', items: [
+  { catKey: 'catPractical', icon: '📋', items: [
     { en: 'Keep your identification and Hajj permit on you always', ar: 'احتفظ بهويتك وتصريح الحج معك دائماً' },
     { en: 'Memorise your group leader\'s contact number', ar: 'احفظ رقم مشرف مجموعتك' },
     { en: 'Know the location of your tent/accommodation in Mina', ar: 'اعرف موقع خيمتك أو سكنك في منى' },
@@ -272,7 +347,7 @@ const THINGS_TO_DO = [
 ];
 
 const THINGS_TO_AVOID = [
-  { cat: 'Ihram Prohibitions', catAr: 'محظورات الإحرام', icon: '🚫', severity: 'high', items: [
+  { catKey: 'catIhramAvoid', icon: '🚫', severity: 'high', items: [
     { en: 'Do not cut hair or nails', ar: 'لا تقص شعرك أو أظافرك' },
     { en: 'Do not use perfume or scented products', ar: 'لا تستخدم العطور أو المنتجات المعطرة' },
     { en: 'Do not engage in sexual relations', ar: 'لا تقرب أهلك' },
@@ -281,14 +356,14 @@ const THINGS_TO_AVOID = [
     { en: 'Women: do not cover the face or hands', ar: 'النساء: لا تغطِ الوجه أو الكفين' },
     { en: 'Do not hunt animals or cut plants in the Haram area', ar: 'لا تصطد الحيوانات ولا تقطع النباتات في الحرم' },
   ]},
-  { cat: 'Behaviour & Conduct', catAr: 'السلوك والتصرف', icon: '⚠️', severity: 'medium', items: [
+  { catKey: 'catBehaviour', icon: '⚠️', severity: 'medium', items: [
     { en: 'Avoid arguments, disputes, and anger', ar: 'تجنب الجدال والخلافات والغضب' },
     { en: 'Do not push or shove others in crowded areas', ar: 'لا تدفع الآخرين في المناطق المزدحمة' },
     { en: 'Avoid wasting time on phones and social media', ar: 'تجنب إضاعة الوقت في الهواتف ووسائل التواصل الاجتماعي' },
     { en: 'Do not litter — keep the sacred sites clean', ar: 'لا تلقِ القمامة — حافظ على نظافة المشاعر المقدسة' },
     { en: 'Avoid loud conversations and noisy behaviour', ar: 'تجنب المحادثات الصاخبة والسلوك المزعج' },
   ]},
-  { cat: 'Safety & Health', catAr: 'السلامة والصحة', icon: '🏥', severity: 'medium', items: [
+  { catKey: 'catSafety', icon: '🏥', severity: 'medium', items: [
     { en: 'Do not travel to sites outside the permitted schedule', ar: 'لا تسافر إلى مواقع خارج الجدول الزمني المحدد' },
     { en: 'Avoid fasting on the Day of Arafah if it weakens you', ar: 'تجنب الصيام في يوم عرفة إذا كان يضعفك' },
     { en: 'Do not ignore signs of heat stroke — seek help immediately', ar: 'لا تتجاهل علامات ضربة الشمس — اطلب المساعدة فوراً' },
@@ -312,8 +387,18 @@ export default function HajjScreen() {
   const [expandedDua, setExpandedDua] = useState<number | null>(null);
   const [expandedDo, setExpandedDo] = useState<number | null>(null);
   const [expandedAvoid, setExpandedAvoid] = useState<number | null>(null);
-  const [lang, setLang] = useState('en');
+  const { lang } = useLang();
   const isAr = lang === 'ar';
+  const th = HAJJ_T[lang] || HAJJ_T.en;
+
+  const SECTIONS: { id: Section; icon: string; label: string }[] = [
+    { id: 'overview', icon: '🕋', label: th.secOverview },
+    { id: 'days', icon: '📅', label: th.secDays },
+    { id: 'duas', icon: '🤲', label: th.secDuas },
+    { id: 'do', icon: '✅', label: th.secDo },
+    { id: 'avoid', icon: '⛔', label: th.secAvoid },
+    { id: 'map', icon: '🗺️', label: th.secMap },
+  ];
 
   return (
     <View style={styles.container}>
@@ -323,17 +408,14 @@ export default function HajjScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.screenTitle}>{isAr ? 'دليل الحج' : 'Hajj Guide'}</Text>
-            <Text style={styles.screenSub}>{isAr ? 'الحج المبرور ليس له ثواب إلا الجنة' : "Complete Pilgrimage Companion"}</Text>
+            <Text style={styles.screenTitle}>{th.title}</Text>
+            <Text style={styles.screenSub}>{th.sub}</Text>
           </View>
-          <Pressable onPress={() => setLang(isAr ? 'en' : 'ar')} style={styles.langToggle}>
-            <Text style={styles.langToggleText}>{isAr ? 'EN' : 'عر'}</Text>
-          </Pressable>
         </View>
 
         {/* Section Navigation */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navRow}>
-          {HAJJ_SECTIONS.map((sec) => (
+          {SECTIONS.map((sec) => (
             <Pressable
               key={sec.id}
               onPress={() => setActiveSection(sec.id)}
@@ -341,7 +423,7 @@ export default function HajjScreen() {
             >
               <Text style={styles.navChipIcon}>{sec.icon}</Text>
               <Text style={[styles.navChipText, activeSection === sec.id && styles.navChipTextActive]}>
-                {isAr ? sec.labelAr : sec.label}
+                {sec.label}
               </Text>
             </Pressable>
           ))}
@@ -353,16 +435,12 @@ export default function HajjScreen() {
             {/* Banner */}
             <View style={styles.overviewBanner}>
               <Text style={styles.overviewBannerText}>🕋</Text>
-              <Text style={styles.overviewBannerTitle}>{isAr ? 'الحج المبرور' : 'Al-Hajj al-Mabrur'}</Text>
-              <Text style={styles.overviewBannerSub}>
-                {isAr
-                  ? '"الحج المبرور ليس له جزاء إلا الجنة" — البخاري ومسلم'
-                  : '"There is no reward for Hajj Mabrur except Paradise." — Bukhari & Muslim'}
-              </Text>
+              <Text style={styles.overviewBannerTitle}>{th.bannerTitle}</Text>
+              <Text style={styles.overviewBannerSub}>{th.bannerSub}</Text>
             </View>
 
             {/* Pillars */}
-            <Text style={styles.sectionHeading}>{isAr ? 'أركان الحج' : 'Pillars of Hajj'}</Text>
+            <Text style={styles.sectionHeading}>{th.pillarsTitle}</Text>
             {[
               { num: '١', numEn: '1', en: 'Ihram — Entering the Sacred State', ar: 'الإحرام — الدخول في الحالة المقدسة' },
               { num: '٢', numEn: '2', en: "Wuquf at Arafah — Standing on 9 Dhul Hijjah", ar: 'الوقوف بعرفة — الوقوف في ٩ ذو الحجة' },
@@ -376,7 +454,7 @@ export default function HajjScreen() {
             ))}
 
             {/* Wajibat */}
-            <Text style={[styles.sectionHeading, { marginTop: 20 }]}>{isAr ? 'واجبات الحج' : 'Obligatory Acts (Wajibat)'}</Text>
+            <Text style={[styles.sectionHeading, { marginTop: 20 }]}>{th.wajibatTitle}</Text>
             {[
               { en: 'Ihram from the Miqat boundary', ar: 'الإحرام من الميقات' },
               { en: "Staying at Arafah until sunset", ar: 'المكث في عرفة حتى الغروب' },
@@ -393,7 +471,7 @@ export default function HajjScreen() {
             ))}
 
             {/* Types */}
-            <Text style={[styles.sectionHeading, { marginTop: 20 }]}>{isAr ? 'أنواع الحج' : 'Types of Hajj'}</Text>
+            <Text style={[styles.sectionHeading, { marginTop: 20 }]}>{th.typesTitle}</Text>
             {[
               { title: 'Tamattu\'', titleAr: 'التمتع', desc: 'Umrah first then Hajj with a break between. Most common for those travelling from afar. Requires Hady sacrifice.', descAr: 'عمرة ثم حج مع فصل بينهما. الأكثر شيوعاً للقادمين من بعيد. يستلزم ذبح الهدي.' },
               { title: 'Ifrad', titleAr: 'الإفراد', desc: 'Hajj only. Pilgrim stays in ihram throughout. No Hady required.', descAr: 'حج فقط. يبقى الحاج في الإحرام طوال الوقت. لا يستلزم الهدي.' },
@@ -410,7 +488,7 @@ export default function HajjScreen() {
         {/* DAILY GUIDE */}
         {activeSection === 'days' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{isAr ? 'الجدول اليومي للحج' : 'Day-by-Day Hajj Schedule'}</Text>
+            <Text style={styles.sectionHeading}>{th.daysTitle}</Text>
             {HAJJ_DAYS.map((day, i) => (
               <Pressable key={i} onPress={() => setExpandedDay(expandedDay === i ? null : i)} style={styles.dayCard}>
                 <View style={[styles.dayCardBar, { backgroundColor: day.color + '33' }]}>
@@ -446,7 +524,7 @@ export default function HajjScreen() {
         {/* HAJJ DUAS */}
         {activeSection === 'duas' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{isAr ? 'أدعية الحج' : "Hajj Du'as"}</Text>
+            <Text style={styles.sectionHeading}>{th.duasTitle}</Text>
             {HAJJ_DUAS.map((dua, i) => (
               <Pressable key={i} onPress={() => setExpandedDua(expandedDua === i ? null : i)} style={styles.duaCard}>
                 <View style={styles.duaCardHeader}>
@@ -472,12 +550,12 @@ export default function HajjScreen() {
         {/* THINGS TO DO */}
         {activeSection === 'do' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{isAr ? 'ما يجب فعله في الحج' : 'Things To Do During Hajj'}</Text>
+            <Text style={styles.sectionHeading}>{th.doTitle}</Text>
             {THINGS_TO_DO.map((group, gi) => (
               <Pressable key={gi} onPress={() => setExpandedDo(expandedDo === gi ? null : gi)} style={styles.groupCard}>
                 <View style={styles.groupHeader}>
                   <Text style={styles.groupIcon}>{group.icon}</Text>
-                  <Text style={[styles.groupTitle, isAr && styles.rtlText]}>{isAr ? group.catAr : group.cat}</Text>
+                  <Text style={[styles.groupTitle, isAr && styles.rtlText]}>{th[group.catKey] || group.catKey}</Text>
                   <Text style={[styles.expandChev, expandedDo === gi && styles.expandChevOpen]}>›</Text>
                 </View>
                 {expandedDo === gi && (
@@ -498,17 +576,17 @@ export default function HajjScreen() {
         {/* THINGS TO AVOID */}
         {activeSection === 'avoid' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{isAr ? 'ما يجب تجنبه في الحج' : 'Things To Avoid During Hajj'}</Text>
+            <Text style={styles.sectionHeading}>{th.avoidTitle}</Text>
             {THINGS_TO_AVOID.map((group, gi) => (
               <Pressable key={gi} onPress={() => setExpandedAvoid(expandedAvoid === gi ? null : gi)} style={[styles.groupCard, group.severity === 'high' && styles.groupCardHigh]}>
                 <View style={styles.groupHeader}>
                   <Text style={styles.groupIcon}>{group.icon}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.groupTitle, isAr && styles.rtlText, group.severity === 'high' && styles.groupTitleHigh]}>
-                      {isAr ? group.catAr : group.cat}
+                      {th[group.catKey] || group.catKey}
                     </Text>
                     {group.severity === 'high' && (
-                      <Text style={styles.severityBadge}>{isAr ? 'محظور — كفارة واجبة' : 'Prohibited — requires expiation'}</Text>
+                      <Text style={styles.severityBadge}>{th.ihramProhib}</Text>
                     )}
                   </View>
                   <Text style={[styles.expandChev, expandedAvoid === gi && styles.expandChevOpen]}>›</Text>
@@ -533,12 +611,8 @@ export default function HajjScreen() {
         {/* JOURNEY MAP */}
         {activeSection === 'map' && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{isAr ? 'خريطة رحلة الحج' : 'Hajj Journey Map'}</Text>
-            <Text style={styles.mapSubtitle}>
-              {isAr
-                ? 'رحلة من خمسة أيام تغطي المشاعر المقدسة'
-                : 'A 5-day spiritual journey through the sacred sites'}
-            </Text>
+            <Text style={styles.sectionHeading}>{th.mapTitle}</Text>
+            <Text style={styles.mapSubtitle}>{th.mapSub}</Text>
 
             <View style={styles.mapContainer}>
               {JOURNEY_STOPS.map((stop, i) => (
@@ -554,7 +628,7 @@ export default function HajjScreen() {
                   {/* Content */}
                   <View style={[styles.mapStopCard, i === 3 && styles.mapStopCardHighlight]}>
                     <View style={styles.mapStopHeader}>
-                      <Text style={[styles.mapStopNum, i === 3 && styles.mapStopNumHighlight]}>Stop {stop.step}</Text>
+                      <Text style={[styles.mapStopNum, i === 3 && styles.mapStopNumHighlight]}>{th.stop} {stop.step}</Text>
                     </View>
                     <Text style={[styles.mapStopName, i === 3 && styles.mapStopNameHighlight, isAr && styles.rtlText]}>
                       {isAr ? stop.nameAr : stop.name}
@@ -567,7 +641,7 @@ export default function HajjScreen() {
 
             {/* Distance reference */}
             <View style={styles.distanceCard}>
-              <Text style={styles.distanceTitle}>{isAr ? 'المسافات التقريبية' : 'Approximate Distances'}</Text>
+              <Text style={styles.distanceTitle}>{th.distTitle}</Text>
               {[
                 { from: 'Makkah', to: 'Mina', dist: '~5 km', fromAr: 'مكة', toAr: 'منى' },
                 { from: 'Mina', to: 'Arafah', dist: '~15 km', fromAr: 'منى', toAr: 'عرفة' },
@@ -601,8 +675,6 @@ const styles = StyleSheet.create({
   headerLeft: { flex: 1 },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1, marginTop: 2 },
-  langToggle: { backgroundColor: 'rgba(196,164,106,0.1)', borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  langToggleText: { color: GOLD, fontSize: 11, fontWeight: '600' },
 
   navRow: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
   navChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: BORDER, backgroundColor: 'rgba(196,164,106,0.03)' },

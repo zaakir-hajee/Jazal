@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { playTap, playCompletion, speakText, resumeAudioContext, TAP_SOUNDS, COMPLETION_SOUNDS, VOICE_OPTIONS } from '@/lib/sound';
 import { trackEvent, trackDhikrCount } from '@/lib/analytics';
 import { DHIKR_SEQUENCE, DAILY_DHIKR_DB, LANG_LABELS, TRANSLATIONS } from '@/constants/data';
+import { useLang } from '@/lib/lang';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(SCREEN_W - 60, 280);
@@ -27,7 +28,7 @@ function getTodayString() {
 
 export default function CounterScreen() {
   const { user, signIn, signUp, signOut } = useAuth();
-  const [lang, setLang] = useState('en');
+  const { lang, setLang } = useLang();
 
   // Session config
   const [countPerDhikr, setCountPerDhikr] = useState(33);
