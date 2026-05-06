@@ -28,7 +28,13 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>myapp</string>
-          <string>com.jazallab.boltexponativewind</string>
+          <string>com.zaakir.tasbeehdigitalprayercounter</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+bolt-expo-nativewind</string>
         </array>
       </dict>
     </array>

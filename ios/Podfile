@@ -2,26 +2,15 @@ require File.join(File.dirname(`node --print "require.resolve('expo/package.json
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
 require 'json'
-
-# CocoaPods 1.14+ adds visionOS to the DSL; older gems (e.g. system Ruby) lack `s.visionos`.
-# Stub it so iOS-only installs succeed (visionOS pods are ignored for iphone targets).
-unless Pod::Specification.method_defined?(:visionos)
-  class Pod::Specification::VisionPlatformShim
-    def deployment_target=(_); end
-    def deployment_target; '1.0'; end
-    def exclude_files=(_); end
-    def vendored_frameworks=(_); end
-    def resource_bundles=(_); end
-    def method_missing(_name, *_args); self; end
-  end
-  class Pod::Specification
-    def visionos
-      @visionos_shim ||= VisionPlatformShim.new
-    end
-  end
-end
-
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
+
+def ccache_enabled?(podfile_properties)
+  # Environment variable takes precedence
+  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
+  
+  # Fall back to Podfile properties
+  podfile_properties['apple.ccacheEnabled'] == 'true'
+end
 
 ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == 'false'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
@@ -38,7 +27,10 @@ target 'boltexponativewind' do
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else
     config_command = [
-      'npx',
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(\'expo/bin/autolinking\')',
       'expo-modules-autolinking',
       'react-native-config',
       '--json',
@@ -65,7 +57,7 @@ target 'boltexponativewind' do
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
+      :ccache_enabled => ccache_enabled?(podfile_properties),
     )
   end
 end
