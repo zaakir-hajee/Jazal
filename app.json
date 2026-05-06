@@ -9,19 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-<<<<<<< HEAD
       "supportsTablet": true,
-      "bundleIdentifier": "com.zaakir.tasbeehdigitalprayercounter"
-=======
-      "supportsTablet": true
->>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
+      "bundleIdentifier": "com.zaakir.tasbeehdigitalprayercounter",
+      "buildNumber": "3"
     },
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-<<<<<<< HEAD
     "plugins": [
       "expo-router",
       "expo-font",
@@ -32,18 +28,17 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.jazallab.boltexponativewind"
+      "package": "com.zaakir.tasbeehdigitalprayercounter",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#0d2818"
+      }
     },
     "extra": {
       "router": {},
       "eas": {
         "projectId": "f5376202-dc3e-41e8-b1d0-653cad2d0c21"
       }
-=======
-    "plugins": ["expo-router", "expo-font", "expo-web-browser"],
-    "experiments": {
-      "typedRoutes": true
->>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
     }
   }
 }
