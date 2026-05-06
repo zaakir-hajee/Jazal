@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Platform,
+<<<<<<< HEAD
   Dimensions, Modal, TextInput, ActivityIndicator, Animated, Alert,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
+=======
+  Dimensions, Modal, TextInput, ActivityIndicator, Animated,
+} from 'react-native';
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +16,10 @@ import { playTap, playCompletion, speakText, resumeAudioContext, TAP_SOUNDS, COM
 import { trackEvent, trackDhikrCount } from '@/lib/analytics';
 import { DHIKR_SEQUENCE, DAILY_DHIKR_DB, LANG_LABELS, TRANSLATIONS } from '@/constants/data';
 import { useLang } from '@/lib/lang';
+<<<<<<< HEAD
+=======
+import { initializePurchases, purchaseSupport, restorePurchases } from '@/lib/purchases';
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(SCREEN_W - 60, 280);
@@ -49,6 +58,11 @@ export default function CounterScreen() {
   const [tapSound, setTapSound] = useState('soft');
   const [compSound, setCompSound] = useState('chime');
   const [voiceOpt, setVoiceOpt] = useState('arabic');
+<<<<<<< HEAD
+=======
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [purchaseMsg, setPurchaseMsg] = useState('');
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
   const [showSettings, setShowSettings] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -66,6 +80,7 @@ export default function CounterScreen() {
   const isRTL = lang === 'ar';
   const dailyDhikr = useMemo(() => getDailyDhikr(), []);
 
+<<<<<<< HEAD
   const handlePurchase = useCallback(async (productId: string) => {
     try {
       const products = await Purchases.getProducts([productId]);
@@ -82,6 +97,8 @@ export default function CounterScreen() {
     }
   }, []);
 
+=======
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
   // Build effective sequence: start from startingDhikr, override target with countPerDhikr
   const activeSequence = useMemo(() => {
     const reordered = [
@@ -113,6 +130,14 @@ export default function CounterScreen() {
     trackEvent('session_start', user.id, { date: today });
   }, [user]);
 
+<<<<<<< HEAD
+=======
+  // Initialize RevenueCat on mount
+  useEffect(() => {
+    initializePurchases(user?.id);
+  }, [user?.id]);
+
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
   // Daily reset check
   useEffect(() => {
     const today = getTodayString();
@@ -221,6 +246,37 @@ export default function CounterScreen() {
     }
   }
 
+<<<<<<< HEAD
+=======
+  async function handleSupport() {
+    if (Platform.OS === 'web') {
+      setPurchaseMsg('In-app purchases are only available on iOS/Android.');
+      setTimeout(() => setPurchaseMsg(''), 3000);
+      return;
+    }
+    setPurchaseLoading(true);
+    setPurchaseMsg('');
+    const result = await purchaseSupport();
+    setPurchaseLoading(false);
+    if (result.success) {
+      setPurchaseMsg('Thank you for your support! Jazak Allahu Khayran.');
+    } else if (result.error !== 'cancelled') {
+      setPurchaseMsg(result.error ?? 'Something went wrong.');
+    }
+    if (result.success || result.error !== 'cancelled') {
+      setTimeout(() => setPurchaseMsg(''), 4000);
+    }
+  }
+
+  async function handleRestore() {
+    setPurchaseLoading(true);
+    const result = await restorePurchases();
+    setPurchaseLoading(false);
+    setPurchaseMsg(result.success ? 'Purchases restored.' : (result.error ?? 'Nothing to restore.'));
+    setTimeout(() => setPurchaseMsg(''), 3000);
+  }
+
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
@@ -398,6 +454,7 @@ export default function CounterScreen() {
 
         {/* SUPPORT */}
         <View style={styles.supportCard}>
+<<<<<<< HEAD
           <Text style={styles.supportTitle}>💛 {t.supportBtn}</Text>
           <Text style={styles.supportMsg}>{t.supportMsg}</Text>
           <View style={styles.supportTiers}>
@@ -415,6 +472,28 @@ export default function CounterScreen() {
               </Pressable>
             ))}
           </View>
+=======
+          <Text style={styles.supportTitle}>Support the Developer</Text>
+          <Text style={styles.supportMsg}>
+            This app is free and ad-free. If it brings you peace and helps you remember Allah, consider leaving a small gift.
+          </Text>
+          {purchaseMsg ? (
+            <Text style={[styles.purchaseMsg, purchaseMsg.startsWith('Thank') && styles.purchaseMsgSuccess]}>{purchaseMsg}</Text>
+          ) : null}
+          <Pressable
+            onPress={handleSupport}
+            disabled={purchaseLoading}
+            style={[styles.supportPurchaseBtn, purchaseLoading && styles.supportPurchaseBtnDisabled]}
+          >
+            {purchaseLoading
+              ? <ActivityIndicator color="#0a1a15" size="small" />
+              : <Text style={styles.supportPurchaseBtnText}>Support the App</Text>
+            }
+          </Pressable>
+          <Pressable onPress={handleRestore} disabled={purchaseLoading} style={styles.restoreBtn}>
+            <Text style={styles.restoreBtnText}>Restore Purchase</Text>
+          </Pressable>
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
         </View>
 
         <Text style={styles.version}>TASBEEH v1.0</Text>
@@ -619,11 +698,21 @@ const styles = StyleSheet.create({
   supportCard: { marginHorizontal: 20, marginBottom: 12, padding: 16, backgroundColor: BG_CARD, borderRadius: 16, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
   supportTitle: { color: GOLD, fontSize: 12, fontWeight: '600', marginBottom: 8 },
   supportMsg: { color: '#9a9580', fontSize: 10, lineHeight: 16, textAlign: 'center', marginBottom: 12, maxWidth: 300 },
+<<<<<<< HEAD
   supportTiers: { flexDirection: 'row', gap: 6 },
   tierBtn: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: BORDER },
   tierBtnPrimary: { backgroundColor: GOLD, borderColor: GOLD },
   tierText: { color: GOLD, fontSize: 11, fontWeight: '600' },
   tierTextPrimary: { color: '#0a1a15' },
+=======
+  purchaseMsg: { color: '#e05555', fontSize: 11, textAlign: 'center', marginBottom: 10 },
+  purchaseMsgSuccess: { color: '#5ab87a' },
+  supportPurchaseBtn: { backgroundColor: GOLD, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 32, marginBottom: 10, minWidth: 200, alignItems: 'center' },
+  supportPurchaseBtnDisabled: { opacity: 0.6 },
+  supportPurchaseBtnText: { color: '#0a1a15', fontSize: 13, fontWeight: '700' },
+  restoreBtn: { paddingVertical: 6 },
+  restoreBtnText: { color: MUTED, fontSize: 10, textDecorationLine: 'underline' },
+>>>>>>> 62f3a7c220c9c110faf5d0256edebbe3db4a6d93
   version: { textAlign: 'center', color: '#1a2a1a', fontSize: 8, letterSpacing: 1, marginTop: 8 },
   // Session modal
   sessionModal: { backgroundColor: '#0d2818', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36, borderTopWidth: 1, borderColor: BORDER, maxHeight: '90%' },
