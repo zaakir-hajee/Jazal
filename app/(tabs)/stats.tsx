@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -40,6 +40,7 @@ export default function StatsScreen() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [profile, setProfile] = useState<{ streak_days: number; best_day_count: number; best_day_label: string; first_use_date: string } | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
@@ -112,6 +113,26 @@ export default function StatsScreen() {
       setShowAuth(false);
       setEmail(''); setPassword(''); setDisplayName('');
     }
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true);
+            await supabase.rpc('delete_user');
+            await supabase.auth.signOut();
+            setDeletingAccount(false);
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -224,6 +245,13 @@ export default function StatsScreen() {
               <Text style={styles.accountLabel}>Signed in as</Text>
               <Text style={styles.accountEmail}>{user.email}</Text>
             </View>
+
+            {/* DELETE ACCOUNT */}
+            <Pressable onPress={handleDeleteAccount} style={styles.deleteBtn} disabled={deletingAccount}>
+              {deletingAccount
+                ? <ActivityIndicator color="#e05555" />
+                : <Text style={styles.deleteBtnText}>Delete Account</Text>}
+            </Pressable>
           </>
         )}
       </ScrollView>
@@ -299,6 +327,8 @@ const styles = StyleSheet.create({
   accountCard: { marginHorizontal: 20, marginBottom: 12, padding: 14, backgroundColor: BG_CARD, borderRadius: 14, borderWidth: 1, borderColor: BORDER },
   accountLabel: { color: MUTED, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 },
   accountEmail: { color: '#e8e0d0', fontSize: 13 },
+  deleteBtn: { marginHorizontal: 20, marginBottom: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(224,85,85,0.3)', alignItems: 'center' },
+  deleteBtnText: { color: '#e05555', fontSize: 13, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   authModal: { backgroundColor: '#0d2818', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 28, borderTopWidth: 1, borderColor: BORDER },
   authHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
