@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { TRANSLATIONS } from '@/constants/data';
@@ -28,6 +29,7 @@ function getWeekDates() {
 }
 
 export default function StatsScreen() {
+  const router = useRouter();
   const { user, signIn, signUp } = useAuth();
   const { lang } = useLang();
   const [stats, setStats] = useState<DailyStat[]>([]);
@@ -129,6 +131,7 @@ export default function StatsScreen() {
             await supabase.rpc('delete_user');
             await supabase.auth.signOut();
             setDeletingAccount(false);
+            router.replace('/(tabs)');
           },
         },
       ],
