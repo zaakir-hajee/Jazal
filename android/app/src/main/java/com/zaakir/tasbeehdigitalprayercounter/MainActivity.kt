@@ -1,4 +1,4 @@
-package com.jazallab.boltexponativewind
+package com.zaakir.tasbeehdigitalprayercounter
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
