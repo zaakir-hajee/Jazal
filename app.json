@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tasbeeh Digital Prayer Counter",
-    "slug": "tasbeeh-digital-prayer-counter",
+    "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
