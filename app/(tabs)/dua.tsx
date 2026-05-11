@@ -1,7 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, Pressable, ScrollView, Platform,
-} from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DUAA_CATEGORIES, TRANSLATIONS } from '@/constants/data';
 import { speakText, resumeAudioContext, VOICE_OPTIONS } from '@/lib/sound';
@@ -18,23 +16,19 @@ export default function DuaScreen() {
   const [selectedCategory, setSelectedCategory] = useState<typeof DUAA_CATEGORIES[0] | null>(null);
   const [voiceOpt, setVoiceOpt] = useState('arabic');
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
-  const [voicesReady, setVoicesReady] = useState(false);
+  const [voicesReady, setVoicesReady] = useState(Platform.OS !== 'web');
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
   const isRTL = lang === 'ar';
 
-  // Wait for browser voices to load (needed for TTS to work)
+  // On web, wait for browser voices to load before enabling TTS
   useEffect(() => {
-    if (Platform.OS !== 'web') { setVoicesReady(true); return; }
+    if (Platform.OS !== 'web') return;
     function checkVoices() {
-      const voices = window.speechSynthesis?.getVoices() ?? [];
-      if (voices.length > 0) {
-        setVoicesReady(true);
-      }
+      if ((window.speechSynthesis?.getVoices() ?? []).length > 0) setVoicesReady(true);
     }
     checkVoices();
     window.speechSynthesis?.addEventListener?.('voiceschanged', checkVoices);
-    // Fallback: mark ready after short delay regardless
     const timer = setTimeout(() => setVoicesReady(true), 1500);
     return () => {
       window.speechSynthesis?.removeEventListener?.('voiceschanged', checkVoices);
@@ -45,29 +39,8 @@ export default function DuaScreen() {
   function handleListen(arabic: string, idx: number) {
     resumeAudioContext();
     setSpeakingIdx(idx);
-
-    if (Platform.OS === 'web' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const preset = VOICE_OPTIONS[voiceOpt];
-      if (!preset?.lang) { setSpeakingIdx(null); return; }
-
-      const utter = new SpeechSynthesisUtterance(arabic);
-      utter.lang = preset.lang;
-      utter.rate = preset.rate;
-      utter.pitch = preset.pitch;
-
-      // Try to select an Arabic voice
-      const voices = window.speechSynthesis.getVoices();
-      const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
-      if (arabicVoice) utter.voice = arabicVoice;
-
-      utter.onend = () => setSpeakingIdx(null);
-      utter.onerror = () => setSpeakingIdx(null);
-      window.speechSynthesis.speak(utter);
-    } else {
-      speakText(arabic, voiceOpt);
-      setTimeout(() => setSpeakingIdx(null), 3000);
-    }
+    speakText(arabic, voiceOpt);
+    setTimeout(() => setSpeakingIdx(null), 3000);
   }
 
   return (
@@ -119,7 +92,7 @@ export default function DuaScreen() {
         ) : (
           // Category Detail
           <>
-            <Pressable onPress={() => { setSelectedCategory(null); setSpeakingIdx(null); if (Platform.OS === 'web') window.speechSynthesis?.cancel(); }} style={styles.backBtn}>
+            <Pressable onPress={() => { setSelectedCategory(null); setSpeakingIdx(null); }} style={styles.backBtn}>
               <Text style={styles.backBtnText}>← {t.backToAll}</Text>
             </Pressable>
 
