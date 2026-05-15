@@ -1,28 +1,38 @@
-import { Platform } from 'react-native';
+import { Platform, Vibration } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 
-export const TAP_SOUNDS: Record<string, { name: string; freq: number; dur: number; type: OscillatorType; vol: number }> = {
-  soft:   { name: "Soft Click",    freq: 600,  dur: 0.06, type: "sine",     vol: 0.1  },
-  crisp:  { name: "Crisp Tap",     freq: 900,  dur: 0.04, type: "square",   vol: 0.08 },
-  deep:   { name: "Deep Bead",     freq: 200,  dur: 0.12, type: "sine",     vol: 0.15 },
-  water:  { name: "Water Drop",    freq: 1200, dur: 0.08, type: "sine",     vol: 0.1  },
-  gentle: { name: "Gentle Touch",  freq: 440,  dur: 0.1,  type: "triangle", vol: 0.12 },
-  none:   { name: "Silent",        freq: 0,    dur: 0,    type: "sine",     vol: 0    },
+export const TAP_SOUNDS: Record<string, { name: string; freq: number; dur: number; type: OscillatorType; vol: number; vibrate?: boolean }> = {
+  soft:    { name: "Soft Click",    freq: 600,  dur: 0.06, type: "sine",     vol: 0.1  },
+  crisp:   { name: "Crisp Tap",     freq: 900,  dur: 0.04, type: "square",   vol: 0.08 },
+  deep:    { name: "Deep Bead",     freq: 200,  dur: 0.12, type: "sine",     vol: 0.15 },
+  water:   { name: "Water Drop",    freq: 1200, dur: 0.08, type: "sine",     vol: 0.1  },
+  gentle:  { name: "Gentle Touch",  freq: 440,  dur: 0.1,  type: "triangle", vol: 0.12 },
+  vibrate: { name: "Vibration",     freq: 0,    dur: 0,    type: "sine",     vol: 0,   vibrate: true },
+  none:    { name: "Silent",        freq: 0,    dur: 0,    type: "sine",     vol: 0    },
 };
 
 export const COMPLETION_SOUNDS: Record<string, { name: string; notes: number[]; type: OscillatorType }> = {
-  chime:  { name: "Chime",      notes: [523.25, 659.25, 783.99],          type: "sine"     },
-  bell:   { name: "Bell",       notes: [440, 554.37, 659.25],             type: "triangle" },
-  gong:   { name: "Gong",       notes: [130.81, 164.81],                  type: "sine"     },
-  ascend: { name: "Ascending",  notes: [392, 493.88, 587.33, 698.46],     type: "sine"     },
-  none:   { name: "Silent",     notes: [],                                 type: "sine"     },
+  chime:  { name: "Chime",      notes: [523.25, 659.25, 783.99],      type: "sine"     },
+  bell:   { name: "Bell",       notes: [440, 554.37, 659.25],         type: "triangle" },
+  gong:   { name: "Gong",       notes: [130.81, 164.81],              type: "sine"     },
+  ascend: { name: "Ascending",  notes: [392, 493.88, 587.33, 698.46], type: "sine"     },
+  none:   { name: "Silent",     notes: [],                            type: "sine"     },
 };
 
 export const VOICE_OPTIONS: Record<string, { name: string; lang: string; rate: number; pitch: number }> = {
   arabic: { name: "Arabic Voice",   lang: "ar-SA", rate: 0.75, pitch: 0.9  },
   slow:   { name: "Arabic (Slow)",  lang: "ar-SA", rate: 0.55, pitch: 0.85 },
-  none:   { name: "No Voice",       lang: "",       rate: 0,    pitch: 0    },
+  male:   { name: "Male Arabic",    lang: "ar-SA", rate: 0.75, pitch: 0.7  },
+  none:   { name: "No Voice",       lang: "",      rate: 0,    pitch: 0    },
+};
+
+// ── Shared audio mode options ─────────────────────────────────────────────────
+
+const AUDIO_MODE = {
+  allowsRecordingIOS: false,
+  playsInSilentModeIOS: true,
+  shouldDuckAndroid: true,
 };
 
 // ── Web AudioContext ──────────────────────────────────────────────────────────
@@ -47,7 +57,6 @@ function getCtx(): AudioContext | null {
 }
 
 // ── Native tone synthesis via expo-av ─────────────────────────────────────────
-// Plays a sine-wave tone by encoding a minimal PCM WAV into a data URI.
 
 function makePcmWavUri(freq: number, durationSec: number, vol: number): string {
   const sampleRate = 22050;
@@ -63,8 +72,8 @@ function makePcmWavUri(freq: number, durationSec: number, vol: number): string {
   write(8, 'WAVE');
   write(12, 'fmt ');
   view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);          // PCM
-  view.setUint16(22, 1, true);          // mono
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, sampleRate * 2, true);
   view.setUint16(32, 2, true);
@@ -74,13 +83,11 @@ function makePcmWavUri(freq: number, durationSec: number, vol: number): string {
 
   const peak = Math.min(vol, 1) * 32767;
   for (let i = 0; i < numSamples; i++) {
-    // Fade out over last 20% to avoid clicks
     const fade = i < numSamples * 0.8 ? 1 : (numSamples - i) / (numSamples * 0.2);
     const sample = Math.round(Math.sin((2 * Math.PI * freq * i) / sampleRate) * peak * fade);
     view.setInt16(44 + i * 2, sample, true);
   }
 
-  // Convert to base64 data URI
   let binary = '';
   const bytes = new Uint8Array(buffer);
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
@@ -90,7 +97,6 @@ function makePcmWavUri(freq: number, durationSec: number, vol: number): string {
 async function playNativeTone(freq: number, durationSec: number, vol: number) {
   if (!freq || !vol) return;
   try {
-    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
     const uri = makePcmWavUri(freq, durationSec + 0.05, vol);
     const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true, volume: vol });
     sound.setOnPlaybackStatusUpdate((status) => {
@@ -103,9 +109,18 @@ async function playNativeTone(freq: number, durationSec: number, vol: number) {
 
 export function playTap(tapKey: string) {
   const preset = TAP_SOUNDS[tapKey];
-  if (!preset?.freq) return;
+  if (!preset) return;
+
+  // Vibration option — no audio
+  if (preset.vibrate) {
+    if (Platform.OS !== 'web') Vibration.vibrate(30);
+    return;
+  }
+
+  if (!preset.freq) return;
 
   if (Platform.OS !== 'web') {
+    Audio.setAudioModeAsync(AUDIO_MODE).catch(() => {});
     playNativeTone(preset.freq, preset.dur, preset.vol);
     return;
   }
@@ -132,6 +147,7 @@ export function playCompletion(compKey: string) {
   if (!preset?.notes?.length) return;
 
   if (Platform.OS !== 'web') {
+    Audio.setAudioModeAsync(AUDIO_MODE).catch(() => {});
     preset.notes.forEach((freq, i) => {
       setTimeout(() => playNativeTone(freq, 0.45, 0.15), i * 150);
     });
@@ -157,6 +173,7 @@ export function playCompletion(compKey: string) {
 }
 
 export function speakText(text: string, voiceKey: string) {
+  if (voiceKey === 'none') return;
   const preset = VOICE_OPTIONS[voiceKey];
   if (!preset?.lang) return;
 
