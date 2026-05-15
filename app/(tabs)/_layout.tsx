@@ -28,6 +28,7 @@ export default function TabLayout() {
           paddingBottom: Platform.OS === 'ios' ? 20 : insets.bottom + 6,
         },
         tabBarShowLabel: false,
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen

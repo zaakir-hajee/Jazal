@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -45,6 +46,8 @@ export default function StatsScreen() {
   const [authLoading, setAuthLoading] = useState(false);
   const [profile, setProfile] = useState<{ streak_days: number; best_day_count: number; best_day_label: string; first_use_date: string } | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
@@ -143,7 +146,7 @@ export default function StatsScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.screenTitle}>{t.statsTitle}</Text>

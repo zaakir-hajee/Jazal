@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Platform,
@@ -63,6 +64,8 @@ export default function CounterScreen() {
   const pendingCountRef = useRef(0);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDateRef = useRef(getTodayString());
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
   const isRTL = lang === 'ar';
@@ -236,7 +239,7 @@ export default function CounterScreen() {
     <View style={styles.container}>
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* HEADER */}
         <View style={[styles.header, isRTL && styles.rowReverse, { paddingTop: insets.top + 8 }]}>

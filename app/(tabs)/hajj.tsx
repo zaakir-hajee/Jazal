@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
 } from 'react-native';
@@ -392,6 +393,8 @@ export default function HajjScreen() {
   const { lang } = useLang();
   const isAr = lang === 'ar';
   const th = HAJJ_T[lang] || HAJJ_T.en;
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const SECTIONS: { id: Section; icon: string; label: string }[] = [
     { id: 'overview', icon: '🕋', label: th.secOverview },
@@ -405,7 +408,7 @@ export default function HajjScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>

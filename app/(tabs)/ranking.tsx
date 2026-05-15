@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -45,6 +46,8 @@ export default function RankingScreen() {
   const [displayName, setDisplayName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
@@ -122,7 +125,7 @@ export default function RankingScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.screenTitle}>{t.rankTitle}</Text>
