@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import Purchases from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { playTap, playCompletion, speakText, resumeAudioContext, TAP_SOUNDS, COMPLETION_SOUNDS, VOICE_OPTIONS } from '@/lib/sound';
@@ -31,6 +32,7 @@ function getTodayString() {
 
 export default function CounterScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user, signIn, signUp, signOut } = useAuth();
   const { lang, setLang } = useLang();
 
@@ -405,6 +407,18 @@ export default function CounterScreen() {
           <Text style={styles.dotdMeaning}>{(dailyDhikr as Record<string, string>)[lang] || dailyDhikr.en}</Text>
         </View>
 
+        {/* QUICK NAV BUTTONS */}
+        <View style={styles.quickNavRow}>
+          <Pressable onPress={() => router.push('/prayer-times')} style={styles.quickNavBtn}>
+            <Text style={styles.quickNavEmoji}>🕌</Text>
+            <Text style={styles.quickNavLabel}>Prayer Times</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/qibla')} style={styles.quickNavBtn}>
+            <Text style={styles.quickNavEmoji}>🧭</Text>
+            <Text style={styles.quickNavLabel}>Qibla</Text>
+          </Pressable>
+        </View>
+
         {/* COMING SOON */}
         <View style={styles.comingSoonCard}>
           <Text style={styles.comingSoonText}>✨ {t.moreTasbeehs}</Text>
@@ -631,6 +645,10 @@ const styles = StyleSheet.create({
   dotdArabic: { color: '#e8e0d0', fontSize: 18, fontWeight: '600', textAlign: 'center', lineHeight: 32, marginBottom: 5 },
   dotdTranslit: { color: GOLD, fontSize: 10, fontWeight: '500' },
   dotdMeaning: { color: MUTED, fontSize: 9, fontStyle: 'italic', marginTop: 3, textAlign: 'center' },
+  quickNavRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 12, gap: 10 },
+  quickNavBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, backgroundColor: BG_CARD, borderRadius: 14, borderWidth: 1, borderColor: BORDER, gap: 4 },
+  quickNavEmoji: { fontSize: 24 },
+  quickNavLabel: { color: GOLD, fontSize: 11, fontWeight: '600' },
   comingSoonCard: { marginHorizontal: 20, marginBottom: 10, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: 'rgba(196,164,106,0.04)', borderRadius: 10, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
   comingSoonText: { color: MUTED, fontSize: 11, fontStyle: 'italic', letterSpacing: 0.3 },
   supportCard: { marginHorizontal: 20, marginBottom: 12, padding: 16, backgroundColor: BG_CARD, borderRadius: 16, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
