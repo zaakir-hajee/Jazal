@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zaakir.tasbeehdigitalprayercounter",
-      "buildNumber": "9"
+      "buildNumber": "11"
     },
     "web": {
       "bundler": "metro",
