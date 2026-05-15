@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Platform,
   Dimensions, Modal, TextInput, ActivityIndicator, Animated, Alert,
@@ -28,6 +29,7 @@ function getTodayString() {
 }
 
 export default function CounterScreen() {
+  const insets = useSafeAreaInsets();
   const { user, signIn, signUp, signOut } = useAuth();
   const { lang, setLang } = useLang();
 
@@ -237,7 +239,7 @@ export default function CounterScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* HEADER */}
-        <View style={[styles.header, isRTL && styles.rowReverse]}>
+        <View style={[styles.header, isRTL && styles.rowReverse, { paddingTop: insets.top + 8 }]}>
           <View>
             <Text style={styles.appName}>{t.appName}</Text>
             <Text style={styles.appSub}>{t.appSub}</Text>
@@ -553,7 +555,7 @@ const BORDER = 'rgba(196,164,106,0.12)';
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a1a15' },
   scroll: { paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 8 },
   rowReverse: { flexDirection: 'row-reverse' },
   appName: { fontSize: 26, fontWeight: '700', color: GOLD, letterSpacing: 0.5 },
   appSub: { fontSize: 10, color: MUTED, letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 },

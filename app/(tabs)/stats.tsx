@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
@@ -29,6 +30,7 @@ function getWeekDates() {
 }
 
 export default function StatsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, signIn, signUp } = useAuth();
   const { lang } = useLang();
@@ -143,7 +145,7 @@ export default function StatsScreen() {
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.screenTitle}>{t.statsTitle}</Text>
           <Text style={styles.screenSub}>{t.statsSub}</Text>
         </View>
@@ -290,7 +292,7 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a1a15' },
   scroll: { paddingBottom: 40 },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  header: { paddingHorizontal: 20, paddingBottom: 12 },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },
   lockCard: { margin: 20, padding: 28, backgroundColor: BG_CARD, borderRadius: 20, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },

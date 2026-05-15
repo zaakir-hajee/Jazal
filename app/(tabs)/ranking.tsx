@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +30,7 @@ type LeaderEntry = {
 function getTodayString() { return new Date().toISOString().slice(0, 10); }
 
 export default function RankingScreen() {
+  const insets = useSafeAreaInsets();
   const { user, signIn, signUp } = useAuth();
   const { lang } = useLang();
   const [mode, setMode] = useState<'percentage' | 'numbers' | 'off'>('percentage');
@@ -122,7 +124,7 @@ export default function RankingScreen() {
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.screenTitle}>{t.rankTitle}</Text>
           <Text style={styles.screenSub}>{t.rankSub}</Text>
         </View>
@@ -285,7 +287,7 @@ export default function RankingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a1a15' },
   scroll: { paddingBottom: 40 },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  header: { paddingHorizontal: 20, paddingBottom: 12 },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },
   modeTabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, backgroundColor: 'rgba(196,164,106,0.04)', borderRadius: 12, padding: 3, gap: 3 },

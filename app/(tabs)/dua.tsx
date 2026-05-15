@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DUAA_CATEGORIES, TRANSLATIONS } from '@/constants/data';
 import { speakText, resumeAudioContext, VOICE_OPTIONS } from '@/lib/sound';
@@ -12,6 +13,7 @@ const BG_CARD = 'rgba(196,164,106,0.05)';
 const BORDER = 'rgba(196,164,106,0.12)';
 
 export default function DuaScreen() {
+  const insets = useSafeAreaInsets();
   const { lang, setLang } = useLang();
   const [selectedCategory, setSelectedCategory] = useState<typeof DUAA_CATEGORIES[0] | null>(null);
   const [voiceOpt, setVoiceOpt] = useState('arabic');
@@ -49,7 +51,7 @@ export default function DuaScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
-        <View style={[styles.header, isRTL && styles.rowReverse]}>
+        <View style={[styles.header, isRTL && styles.rowReverse, { paddingTop: insets.top + 8 }]}>
           <View>
             <Text style={styles.screenTitle}>{t.duaTitle}</Text>
             <Text style={styles.screenSub}>{t.duaSub}</Text>
@@ -130,7 +132,7 @@ export default function DuaScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a1a15' },
   scroll: { paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   rowReverse: { flexDirection: 'row-reverse' },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLang } from '@/lib/lang';
 
@@ -382,6 +383,7 @@ const JOURNEY_STOPS = [
 ];
 
 export default function HajjScreen() {
+  const insets = useSafeAreaInsets();
   const [activeSection, setActiveSection] = useState<Section>('overview');
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [expandedDua, setExpandedDua] = useState<number | null>(null);
@@ -406,7 +408,7 @@ export default function HajjScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerLeft}>
             <Text style={styles.screenTitle}>{th.title}</Text>
             <Text style={styles.screenSub}>{th.sub}</Text>
@@ -671,7 +673,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG_DARK },
   scroll: { paddingBottom: 40 },
 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   headerLeft: { flex: 1 },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1, marginTop: 2 },
