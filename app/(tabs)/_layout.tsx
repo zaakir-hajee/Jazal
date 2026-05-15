@@ -50,6 +50,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="umrah"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🕌" label={t.navUmrah} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="stats"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="📊" label={t.navStats} focused={focused} />,
