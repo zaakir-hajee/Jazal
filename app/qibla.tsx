@@ -29,6 +29,8 @@ const CARDINALS = [
   { label: 'W', angle: 270 },
 ];
 
+const DEGREE_LABELS = [0, 45, 90, 135, 180, 225, 270, 315];
+
 // ── Qibla bearing formula (great-circle) ─────────────────────────────────────
 function calcQibla(lat: number, lon: number): number {
   const φ1 = (lat * Math.PI) / 180;
@@ -131,6 +133,23 @@ function CompassDisc({ qiblaAngle }: { qiblaAngle: number }) {
             }]}
           >
             {label}
+          </Text>
+        );
+      })}
+
+      {/* Degree numbers at 45° increments (skip cardinals) */}
+      {DEGREE_LABELS.filter(d => d % 90 !== 0).map(deg => {
+        const rad = (deg * Math.PI) / 180;
+        const dr  = R - 22;
+        return (
+          <Text
+            key={deg}
+            style={[dsc.degLabel, {
+              left: R + dr * Math.sin(rad) - 12,
+              top:  R - dr * Math.cos(rad) - 8,
+            }]}
+          >
+            {deg}
           </Text>
         );
       })}
@@ -299,15 +318,19 @@ export default function QiblaScreen() {
 
         {/* Compass */}
         {coords && qibla !== null ? (
-          hasSensor === true ? (
-            /* Live rotating disc */
-            <Animated.View style={{ transform: [{ rotate: compassSpin }] }}>
+          <View style={{ alignItems: 'center' }}>
+            {/* Fixed heading indicator — always points "up" (current device heading) */}
+            <View style={s.headingIndicator} />
+            {hasSensor === true ? (
+              /* Live rotating disc */
+              <Animated.View style={{ transform: [{ rotate: compassSpin }] }}>
+                <CompassDisc qiblaAngle={qibla} />
+              </Animated.View>
+            ) : (
+              /* Static disc (no sensor or still checking) */
               <CompassDisc qiblaAngle={qibla} />
-            </Animated.View>
-          ) : (
-            /* Static disc (no sensor or still checking) */
-            <CompassDisc qiblaAngle={qibla} />
-          )
+            )}
+          </View>
         ) : !locLoading ? (
           <View style={s.noLocWrap}>
             <Text style={s.noLocEmoji}>🧭</Text>
@@ -327,8 +350,9 @@ export default function QiblaScreen() {
           <View style={s.hint}>
             <Text style={s.hintEmoji}>🕋</Text>
             <Text style={s.hintText}>
-              Face <Text style={s.hintBold}>{qiblaDeg}°</Text> from North
-              {hasSensor ? ' — align the gold arrow with the Kaaba 🕋' : ''}
+              {hasSensor
+                ? 'Rotate your phone until the 🕋 arrow points to your Qibla direction'
+                : `Face ${qiblaDeg}° from North toward Makkah`}
             </Text>
           </View>
         )}
@@ -391,6 +415,14 @@ const s = StyleSheet.create({
   hintEmoji: { fontSize: 22 },
   hintText:  { color: MUTED, fontSize: 12, flex: 1, lineHeight: 18 },
   hintBold:  { color: GOLD, fontWeight: '700' },
+
+  headingIndicator: {
+    width: 0, height: 0,
+    borderLeftWidth: 9, borderRightWidth: 9, borderTopWidth: 0, borderBottomWidth: 16,
+    borderLeftColor: 'transparent', borderRightColor: 'transparent',
+    borderBottomColor: '#e05050',
+    marginBottom: 4,
+  },
 });
 
 const dsc = StyleSheet.create({
@@ -410,6 +442,11 @@ const dsc = StyleSheet.create({
   cardinal: {
     position: 'absolute',
     fontSize: 14, width: 20, textAlign: 'center',
+  },
+  degLabel: {
+    position: 'absolute',
+    fontSize: 9, width: 24, textAlign: 'center',
+    color: 'rgba(196,164,106,0.55)',
   },
   dot: {
     position: 'absolute',

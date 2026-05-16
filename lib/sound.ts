@@ -1,6 +1,7 @@
 import { Platform, Vibration } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
+import * as Haptics from 'expo-haptics';
 
 export const TAP_SOUNDS: Record<string, { name: string; freq: number; dur: number; type: OscillatorType; vol: number; vibrate?: boolean }> = {
   soft:    { name: "Soft Click",    freq: 600,  dur: 0.06, type: "sine",     vol: 0.1  },
@@ -23,7 +24,6 @@ export const COMPLETION_SOUNDS: Record<string, { name: string; notes: number[]; 
 export const VOICE_OPTIONS: Record<string, { name: string; lang: string; rate: number; pitch: number }> = {
   arabic: { name: "Arabic Voice",   lang: "ar-SA", rate: 0.75, pitch: 0.9  },
   slow:   { name: "Arabic (Slow)",  lang: "ar-SA", rate: 0.55, pitch: 0.85 },
-  male:   { name: "Male Arabic",    lang: "ar-SA", rate: 0.75, pitch: 0.7  },
   none:   { name: "No Voice",       lang: "",      rate: 0,    pitch: 0    },
 };
 
@@ -120,8 +120,7 @@ export function playTap(tapKey: string) {
   if (!preset.freq) return;
 
   if (Platform.OS !== 'web') {
-    Audio.setAudioModeAsync(AUDIO_MODE).catch(() => {});
-    playNativeTone(preset.freq, preset.dur, preset.vol);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     return;
   }
 

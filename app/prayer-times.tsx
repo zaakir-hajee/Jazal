@@ -35,7 +35,7 @@ const CALC_METHODS = [
   { key: 'NorthAmerica',      label: 'ISNA (North America)' },
   { key: 'Egyptian',          label: 'Egyptian General Authority' },
   { key: 'UmmAlQura',         label: 'Makkah (Umm al-Qura)' },
-  { key: 'Karachi',           label: 'Karachi' },
+  { key: 'Karachi',           label: 'Hanafi (Karachi)' },
 ];
 
 const AZAN_STYLES = [
