@@ -17,7 +17,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     rankKeep: "Keep counting! Every dhikr brings you closer to the top.",
     ofAllUsers: "of all users",
     supportBtn: "Support This App",
-    supportMsg: "This app is free. If you find it valuable, support us with a one-time contribution.",
+    supportMsg: "This app is free. If you find it valuable, support us with a contribution to keep improving the app.",
     dhikrOfDay: "Dhikr of the Day", signIn: "Sign In", signUp: "Create Account",
     navCounter: "Tasbeeh", navDua: "Du'a", navStats: "Stats", navRanking: "Ranking", navHajj: "Hajj", navUmrah: "Umrah",
     of: "of", email: "Email", password: "Password", name: "Your Name",

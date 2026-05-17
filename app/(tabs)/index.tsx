@@ -3,7 +3,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Platform,
-  Dimensions, Modal, TextInput, ActivityIndicator, Animated, Alert,
+  Dimensions, Modal, TextInput, ActivityIndicator, Animated, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -443,9 +443,6 @@ export default function CounterScreen() {
               </Pressable>
             ))}
           </View>
-          <Pressable onPress={handleRestore} style={styles.restoreBtn}>
-            <Text style={styles.restoreBtnText}>Restore Purchases</Text>
-          </Pressable>
         </View>
 
         <Text style={styles.version}>TASBEEH v1.0</Text>
@@ -514,8 +511,9 @@ export default function CounterScreen() {
 
       {/* AUTH MODAL */}
       <Modal visible={showAuth} transparent animationType="slide" onRequestClose={() => setShowAuth(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.authModal}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.authHeader}>
               <Text style={styles.authTitle}>{authMode === 'signin' ? t.signIn : t.signUp}</Text>
               <Pressable onPress={() => setShowAuth(false)}>
@@ -536,8 +534,9 @@ export default function CounterScreen() {
                 {authMode === 'signin' ? t.noAccount : t.hasAccount} {authMode === 'signin' ? t.signUp : t.signIn}
               </Text>
             </Pressable>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

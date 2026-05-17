@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
-import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/lib/auth';
@@ -39,6 +39,8 @@ export default function RankingScreen() {
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([]);
   const [globalStats, setGlobalStats] = useState<{ total_users: number; total_dhikr: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [period, setPeriod] = useState<'daily' | 'alltime'>('daily');
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -51,51 +53,69 @@ export default function RankingScreen() {
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
-  useEffect(() => {
+  const fetchData = useCallback(async (isRefresh = false) => {
     if (!user) return;
-    setLoading(true);
+    if (isRefresh) setRefreshing(true); else setLoading(true);
     const today = getTodayString();
 
-    Promise.all([
-      // User rank
-      supabase.rpc('get_user_rank_today', { p_user_id: user.id }),
-      // Top 10 leaderboard
-      supabase
-        .from('daily_stats')
-        .select('user_id, total_count')
-        .eq('date', today)
-        .order('total_count', { ascending: false })
-        .limit(10),
-      // Profiles for names
-      supabase.from('profiles').select('id, display_name'),
-    ]).then(async ([rankRes, leaderRes, profilesRes]) => {
-      if (rankRes.data?.[0]) {
-        const r = rankRes.data[0];
-        setRankData({
-          user_rank: Number(r.user_rank),
-          total_users: Number(r.total_users),
-          user_count: Number(r.user_count),
-          percentile: Number(r.percentile),
-        });
-        setGlobalStats({
-          total_users: Number(r.total_users),
-          total_dhikr: 0,
-        });
+    try {
+      if (period === 'daily') {
+        const [rankRes, leaderRes, profilesRes] = await Promise.all([
+          supabase.rpc('get_user_rank_today', { p_user_id: user.id }),
+          supabase.from('daily_stats').select('user_id, total_count').eq('date', today).order('total_count', { ascending: false }).limit(10),
+          supabase.from('profiles').select('id, display_name'),
+        ]);
+        if (rankRes.data?.[0]) {
+          const r = rankRes.data[0];
+          setRankData({ user_rank: Number(r.user_rank), total_users: Number(r.total_users), user_count: Number(r.user_count), percentile: Number(r.percentile) });
+          setGlobalStats({ total_users: Number(r.total_users), total_dhikr: 0 });
+        }
+        if (leaderRes.data && profilesRes.data) {
+          const profileMap = new Map(profilesRes.data.map((p: any) => [p.id, p.display_name || 'Anonymous']));
+          setLeaderboard(leaderRes.data.map((row: any, i: number) => ({
+            rank: i + 1, display_name: profileMap.get(row.user_id) || 'Anonymous',
+            total_count: row.total_count, is_me: row.user_id === user.id,
+          })));
+        }
+      } else {
+        // All-time: aggregate total_count per user across all days
+        const [leaderRes, profilesRes] = await Promise.all([
+          supabase.from('daily_stats').select('user_id, total_count').order('total_count', { ascending: false }),
+          supabase.from('profiles').select('id, display_name'),
+        ]);
+        if (leaderRes.data && profilesRes.data) {
+          const profileMap = new Map(profilesRes.data.map((p: any) => [p.id, p.display_name || 'Anonymous']));
+          const totals = new Map<string, number>();
+          for (const row of leaderRes.data) {
+            totals.set(row.user_id, (totals.get(row.user_id) ?? 0) + row.total_count);
+          }
+          const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+          setLeaderboard(sorted.map(([uid, cnt], i) => ({
+            rank: i + 1, display_name: profileMap.get(uid) || 'Anonymous',
+            total_count: cnt, is_me: uid === user.id,
+          })));
+          const myTotal = totals.get(user.id) ?? 0;
+          const myRank = [...totals.entries()].sort((a, b) => b[1] - a[1]).findIndex(([uid]) => uid === user.id) + 1;
+          setRankData({ user_rank: myRank || totals.size, total_users: totals.size, user_count: myTotal, percentile: myRank ? Math.round((1 - myRank / totals.size) * 100) : 0 });
+          setGlobalStats({ total_users: totals.size, total_dhikr: 0 });
+        }
       }
+    } catch {}
 
-      if (leaderRes.data && profilesRes.data) {
-        const profileMap = new Map(profilesRes.data.map((p: any) => [p.id, p.display_name || 'Anonymous']));
-        const entries: LeaderEntry[] = leaderRes.data.map((row: any, i: number) => ({
-          rank: i + 1,
-          display_name: profileMap.get(row.user_id) || 'Anonymous',
-          total_count: row.total_count,
-          is_me: row.user_id === user.id,
-        }));
-        setLeaderboard(entries);
-      }
-      setLoading(false);
-    });
-  }, [user]);
+    if (isRefresh) setRefreshing(false); else setLoading(false);
+  }, [user, period]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Real-time subscription — refresh when daily_stats changes
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('ranking-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_stats' }, () => { fetchData(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchData]);
 
   async function handleAuth() {
     setAuthError('');
@@ -125,7 +145,12 @@ export default function RankingScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchData(true)} tintColor={GOLD} />}
+      >
 
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.screenTitle}>{t.rankTitle}</Text>
@@ -144,6 +169,19 @@ export default function RankingScreen() {
             </Pressable>
           ))}
         </View>
+
+        {/* Daily / All-Time toggle */}
+        {mode !== 'off' && (
+          <View style={styles.periodTabs}>
+            {(['daily', 'alltime'] as const).map(p => (
+              <Pressable key={p} onPress={() => setPeriod(p)} style={[styles.periodTab, period === p && styles.periodTabActive]}>
+                <Text style={[styles.periodTabText, period === p && styles.periodTabTextActive]}>
+                  {p === 'daily' ? '📅 Daily' : '🏆 All Time'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {mode === 'off' ? (
           <View style={styles.privateCard}>
@@ -208,7 +246,7 @@ export default function RankingScreen() {
 
             {mode === 'numbers' && (
               <>
-                <Text style={styles.leaderboardTitle}>Today's Top 10</Text>
+                <Text style={styles.leaderboardTitle}>{period === 'daily' ? "Today's Top 10" : "All-Time Top 10"}</Text>
                 {leaderboard.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Text style={styles.emptyText}>{t.rankNoData}</Text>
@@ -293,7 +331,12 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 12 },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },
-  modeTabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, backgroundColor: 'rgba(196,164,106,0.04)', borderRadius: 12, padding: 3, gap: 3 },
+  periodTabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 12, backgroundColor: 'rgba(196,164,106,0.04)', borderRadius: 10, padding: 3, gap: 3 },
+  periodTab: { flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center' },
+  periodTabActive: { backgroundColor: 'rgba(196,164,106,0.2)' },
+  periodTabText: { color: DIM, fontSize: 11 },
+  periodTabTextActive: { color: GOLD, fontWeight: '700' },
+  modeTabs: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 12, backgroundColor: 'rgba(196,164,106,0.04)', borderRadius: 12, padding: 3, gap: 3 },
   modeTab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
   modeTabActive: { backgroundColor: 'rgba(196,164,106,0.15)' },
   modeTabText: { color: DIM, fontSize: 10, fontWeight: '400' },

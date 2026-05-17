@@ -308,20 +308,34 @@ export default function PrayerTimesScreen() {
     const styleObj = AZAN_STYLES.find(s => s.key === style) ?? AZAN_STYLES[0];
     try {
       if (soundRef.current) {
-        await soundRef.current.unloadAsync();
+        await soundRef.current.stopAsync().catch(() => {});
+        await soundRef.current.unloadAsync().catch(() => {});
         soundRef.current = null;
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true, shouldDuckAndroid: true });
-      const { sound } = await Audio.Sound.createAsync(
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        staysActiveInBackground: false,
+      });
+      const { sound, status } = await Audio.Sound.createAsync(
         { uri: styleObj.url },
-        { shouldPlay: true, volume: 1.0 },
+        { shouldPlay: true, volume: 1.0, progressUpdateIntervalMillis: 500 },
       );
+      if (!('isLoaded' in status) || !status.isLoaded) {
+        setPlayingAzan(false);
+        return;
+      }
       soundRef.current = sound;
       setPlayingAzan(true);
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if ('didJustFinish' in status && status.didJustFinish) {
+      sound.setOnPlaybackStatusUpdate((s) => {
+        if ('didJustFinish' in s && s.didJustFinish) {
           setPlayingAzan(false);
           sound.unloadAsync().catch(() => {});
+          if (soundRef.current === sound) soundRef.current = null;
+        }
+        if ('error' in s) {
+          setPlayingAzan(false);
           if (soundRef.current === sound) soundRef.current = null;
         }
       });

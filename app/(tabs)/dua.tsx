@@ -3,7 +3,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { DUAA_CATEGORIES, TRANSLATIONS } from '@/constants/data';
+import { DUAA_CATEGORIES, TRANSLATIONS, LANG_LABELS } from '@/constants/data';
 import { speakText, resumeAudioContext, VOICE_OPTIONS } from '@/lib/sound';
 import { useLang } from '@/lib/lang';
 
@@ -20,6 +20,7 @@ export default function DuaScreen() {
   const [voiceOpt, setVoiceOpt] = useState('arabic');
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const [voicesReady, setVoicesReady] = useState(Platform.OS !== 'web');
+  const [showLangPicker, setShowLangPicker] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
@@ -60,11 +61,21 @@ export default function DuaScreen() {
             <Text style={styles.screenSub}>{t.duaSub}</Text>
           </View>
           <View style={styles.headerRight}>
-            <Pressable onPress={() => setLang(lang === 'en' ? 'ar' : 'en')} style={styles.langToggle}>
-              <Text style={styles.langToggleText}>{lang === 'en' ? 'عر' : 'EN'}</Text>
+            <Pressable onPress={() => setShowLangPicker(v => !v)} style={styles.langToggle}>
+              <Text style={styles.langToggleText}>{LANG_LABELS[lang]?.slice(0, 2).toUpperCase()}</Text>
             </Pressable>
           </View>
         </View>
+
+        {showLangPicker && (
+          <View style={styles.langDropdown}>
+            {Object.entries(LANG_LABELS).map(([code, label]) => (
+              <Pressable key={code} onPress={() => { setLang(code); setShowLangPicker(false); }} style={[styles.langItem, lang === code && styles.langItemActive]}>
+                <Text style={[styles.langItemText, lang === code && styles.langItemTextActive]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {/* Voice selector */}
         <View style={styles.voiceRow}>
@@ -142,6 +153,11 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   langToggle: { backgroundColor: 'rgba(196,164,106,0.1)', borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   langToggleText: { color: GOLD, fontSize: 11, fontWeight: '600' },
+  langDropdown: { alignSelf: 'flex-end', marginRight: 20, marginTop: -4, marginBottom: 4, backgroundColor: '#132e1f', borderRadius: 12, borderWidth: 1, borderColor: BORDER, padding: 4, minWidth: 130 },
+  langItem: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
+  langItemActive: { backgroundColor: 'rgba(196,164,106,0.12)' },
+  langItemText: { color: '#e8e0d0', fontSize: 12 },
+  langItemTextActive: { color: GOLD, fontWeight: '600' },
   voiceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, marginBottom: 8 },
   voiceLabel: { color: MUTED, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 },
   voiceChip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: BORDER },

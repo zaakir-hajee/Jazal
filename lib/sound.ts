@@ -22,10 +22,25 @@ export const COMPLETION_SOUNDS: Record<string, { name: string; notes: number[]; 
 };
 
 export const VOICE_OPTIONS: Record<string, { name: string; lang: string; rate: number; pitch: number }> = {
-  arabic: { name: "Arabic Voice",   lang: "ar-SA", rate: 0.75, pitch: 0.9  },
-  slow:   { name: "Arabic (Slow)",  lang: "ar-SA", rate: 0.55, pitch: 0.85 },
-  none:   { name: "No Voice",       lang: "",      rate: 0,    pitch: 0    },
+  arabic: { name: "Arabic Voice", lang: "ar-SA", rate: 0.65, pitch: 0.7 },
+  none:   { name: "No Voice",     lang: "",      rate: 0,    pitch: 0   },
 };
+
+// Cache the best available male Arabic voice identifier on iOS
+let _maleArabicVoiceId: string | undefined;
+let _voiceCacheReady = false;
+
+async function getMaleArabicVoiceId(): Promise<string | undefined> {
+  if (_voiceCacheReady) return _maleArabicVoiceId;
+  try {
+    const voices = await Speech.getAvailableVoicesAsync();
+    const best = voices.find(v => v.language === 'ar-SA' && v.quality === 'Enhanced')
+      ?? voices.find(v => v.language?.startsWith('ar'));
+    _maleArabicVoiceId = best?.identifier;
+  } catch {}
+  _voiceCacheReady = true;
+  return _maleArabicVoiceId;
+}
 
 // ── Shared audio mode options ─────────────────────────────────────────────────
 
@@ -171,14 +186,23 @@ export function playCompletion(compKey: string) {
   });
 }
 
-export function speakText(text: string, voiceKey: string) {
+export async function speakText(text: string, voiceKey: string) {
   if (voiceKey === 'none') return;
   const preset = VOICE_OPTIONS[voiceKey];
   if (!preset?.lang) return;
 
   if (Platform.OS !== 'web') {
     Speech.stop();
-    Speech.speak(text, { language: preset.lang, rate: preset.rate, pitch: preset.pitch });
+    let voiceId: string | undefined;
+    if (Platform.OS === 'ios') {
+      voiceId = await getMaleArabicVoiceId();
+    }
+    Speech.speak(text, {
+      language: preset.lang,
+      rate: preset.rate,
+      pitch: preset.pitch,
+      ...(voiceId ? { voice: voiceId } : {}),
+    });
     return;
   }
 
