@@ -365,7 +365,6 @@ export default function UmrahScreen() {
             ))}
           </View>
         )}
-        </View>
 
         {/* Section Navigation */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navRow}>
