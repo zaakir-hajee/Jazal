@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { DUAA_CATEGORIES, TRANSLATIONS, LANG_LABELS } from '@/constants/data';
 import { speakText, resumeAudioContext, VOICE_OPTIONS } from '@/lib/sound';
 import { useLang } from '@/lib/lang';
+import { registerScroll } from '@/lib/scrollRegistry';
 
 const GOLD = '#c4a46a';
 const MUTED = '#6a7a6a';
@@ -23,6 +24,7 @@ export default function DuaScreen() {
   const [showLangPicker, setShowLangPicker] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+  useEffect(() => { registerScroll('dua', scrollRef); }, []);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
   const isRTL = lang === 'ar';

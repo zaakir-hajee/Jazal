@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLang } from '@/lib/lang';
 import { TRANSLATIONS } from '@/constants/data';
+import { scrollTabToTop } from '@/lib/scrollRegistry';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
@@ -36,36 +37,42 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="📿" label={t.navCounter} focused={focused} />,
         }}
+        listeners={() => ({ tabPress: () => scrollTabToTop('index') })}
       />
       <Tabs.Screen
         name="dua"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="🤲" label={t.navDua} focused={focused} />,
         }}
+        listeners={() => ({ tabPress: () => scrollTabToTop('dua') })}
       />
       <Tabs.Screen
         name="hajj"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="🕋" label={t.navHajj} focused={focused} />,
         }}
+        listeners={() => ({ tabPress: () => scrollTabToTop('hajj') })}
       />
       <Tabs.Screen
         name="umrah"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="🕌" label={t.navUmrah} focused={focused} />,
         }}
+        listeners={() => ({ tabPress: () => scrollTabToTop('umrah') })}
       />
       <Tabs.Screen
         name="stats"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="📊" label={t.navStats} focused={focused} />,
         }}
+        listeners={() => ({ tabPress: () => scrollTabToTop('stats') })}
       />
       <Tabs.Screen
         name="ranking"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon emoji="🏆" label={t.navRanking} focused={focused} />,
         }}
+        listeners={() => ({ tabPress: () => scrollTabToTop('ranking') })}
       />
     </Tabs>
   );

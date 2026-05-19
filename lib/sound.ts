@@ -42,14 +42,6 @@ async function getMaleArabicVoiceId(): Promise<string | undefined> {
   return _maleArabicVoiceId;
 }
 
-// ── Shared audio mode options ─────────────────────────────────────────────────
-
-const AUDIO_MODE = {
-  allowsRecordingIOS: false,
-  playsInSilentModeIOS: true,
-  shouldDuckAndroid: true,
-};
-
 // ── Web AudioContext ──────────────────────────────────────────────────────────
 
 type AudioContextType = typeof AudioContext;
@@ -71,7 +63,13 @@ function getCtx(): AudioContext | null {
   return sharedCtx;
 }
 
-// ── Native tone synthesis via expo-av ─────────────────────────────────────────
+// ── Native tone synthesis via expo-av (completion sounds only) ────────────────
+
+const AUDIO_MODE = {
+  allowsRecordingIOS: false,
+  playsInSilentModeIOS: true,
+  shouldDuckAndroid: true,
+};
 
 function makePcmWavUri(freq: number, durationSec: number, vol: number): string {
   const sampleRate = 22050;
@@ -120,13 +118,23 @@ async function playNativeTone(freq: number, durationSec: number, vol: number) {
   } catch {}
 }
 
+// ── Haptic styles mapped by tap sound name ────────────────────────────────────
+// Medium gives a satisfying physical click on iOS; map "deep" to Heavy.
+const HAPTIC_STYLE: Record<string, Haptics.ImpactFeedbackStyle> = {
+  soft:    Haptics.ImpactFeedbackStyle.Light,
+  crisp:   Haptics.ImpactFeedbackStyle.Medium,
+  deep:    Haptics.ImpactFeedbackStyle.Heavy,
+  water:   Haptics.ImpactFeedbackStyle.Light,
+  gentle:  Haptics.ImpactFeedbackStyle.Light,
+};
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export function playTap(tapKey: string) {
   const preset = TAP_SOUNDS[tapKey];
   if (!preset) return;
 
-  // Vibration option — no audio
+  // Vibration option — no haptic, just Vibration API
   if (preset.vibrate) {
     if (Platform.OS !== 'web') Vibration.vibrate(30);
     return;
@@ -135,7 +143,9 @@ export function playTap(tapKey: string) {
   if (!preset.freq) return;
 
   if (Platform.OS !== 'web') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    // Use expo-haptics for all native tap sounds — reliable on iOS and Android
+    const style = HAPTIC_STYLE[tapKey] ?? Haptics.ImpactFeedbackStyle.Medium;
+    Haptics.impactAsync(style).catch(() => {});
     return;
   }
 
@@ -161,9 +171,14 @@ export function playCompletion(compKey: string) {
   if (!preset?.notes?.length) return;
 
   if (Platform.OS !== 'web') {
-    Audio.setAudioModeAsync(AUDIO_MODE).catch(() => {});
-    preset.notes.forEach((freq, i) => {
-      setTimeout(() => playNativeTone(freq, 0.45, 0.15), i * 150);
+    // Use a haptic sequence to signal completion — no PCM needed
+    const styles = [
+      Haptics.ImpactFeedbackStyle.Medium,
+      Haptics.ImpactFeedbackStyle.Medium,
+      Haptics.ImpactFeedbackStyle.Heavy,
+    ];
+    styles.forEach((style, i) => {
+      setTimeout(() => Haptics.impactAsync(style).catch(() => {}), i * 140);
     });
     return;
   }

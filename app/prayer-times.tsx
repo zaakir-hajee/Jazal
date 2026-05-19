@@ -39,9 +39,9 @@ const CALC_METHODS = [
 ];
 
 const AZAN_STYLES = [
-  { key: 'makkah',  label: 'Makkah',  url: 'https://cdn.islamic.network/adhan/audio/adhan-makkah.mp3' },
-  { key: 'madinah', label: 'Madinah', url: 'https://cdn.islamic.network/adhan/audio/adhan-madinah.mp3' },
-  { key: 'short',   label: 'Short',   url: 'https://cdn.islamic.network/adhan/audio/adhan-short.mp3' },
+  { key: 'makkah',  label: 'Makkah',  url: 'https://www.islamcan.com/audio/adhan/azan1.mp3' },
+  { key: 'madinah', label: 'Madinah', url: 'https://www.islamcan.com/audio/adhan/azan2.mp3' },
+  { key: 'short',   label: 'Short',   url: 'https://www.islamcan.com/audio/adhan/azan4.mp3' },
 ];
 
 const SK = {

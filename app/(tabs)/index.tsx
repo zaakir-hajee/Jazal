@@ -14,6 +14,7 @@ import { playTap, playCompletion, speakText, resumeAudioContext, TAP_SOUNDS, COM
 import { trackEvent, trackDhikrCount } from '@/lib/analytics';
 import { DHIKR_SEQUENCE, DAILY_DHIKR_DB, LANG_LABELS, TRANSLATIONS } from '@/constants/data';
 import { useLang } from '@/lib/lang';
+import { registerScroll } from '@/lib/scrollRegistry';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(SCREEN_W - 60, 280);
@@ -68,6 +69,7 @@ export default function CounterScreen() {
   const lastDateRef = useRef(getTodayString());
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+  useEffect(() => { registerScroll('index', scrollRef); }, []);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
   const isRTL = lang === 'ar';

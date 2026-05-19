@@ -29,7 +29,14 @@ const CARDINALS = [
   { label: 'W', angle: 270 },
 ];
 
-const DEGREE_LABELS = [0, 45, 90, 135, 180, 225, 270, 315];
+const INTERCARDINALS = [
+  { label: 'NE', angle: 45  },
+  { label: 'SE', angle: 135 },
+  { label: 'SW', angle: 225 },
+  { label: 'NW', angle: 315 },
+];
+
+const DEGREE_LABELS = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 
 // ── Qibla bearing formula (great-circle) ─────────────────────────────────────
 function calcQibla(lat: number, lon: number): number {
@@ -118,7 +125,7 @@ function CompassDisc({ qiblaAngle }: { qiblaAngle: number }) {
         <Tick key={i} angleDeg={i * 5} />
       ))}
 
-      {/* Cardinal labels */}
+      {/* Cardinal labels (N/E/S/W) — large, gold */}
       {CARDINALS.map(({ label, angle }) => {
         const rad = (angle * Math.PI) / 180;
         const lr  = R - 30;
@@ -126,10 +133,11 @@ function CompassDisc({ qiblaAngle }: { qiblaAngle: number }) {
           <Text
             key={label}
             style={[dsc.cardinal, {
-              left:  R + lr * Math.sin(rad) - 10,
-              top:   R - lr * Math.cos(rad) - 11,
-              color: label === 'N' ? '#e05050' : '#d8d0c0',
-              fontWeight: label === 'N' ? '800' : '600',
+              left:  R + lr * Math.sin(rad) - 11,
+              top:   R - lr * Math.cos(rad) - 12,
+              color: label === 'N' ? '#e05050' : GOLD,
+              fontWeight: '800',
+              fontSize: 16,
             }]}
           >
             {label}
@@ -137,8 +145,27 @@ function CompassDisc({ qiblaAngle }: { qiblaAngle: number }) {
         );
       })}
 
-      {/* Degree numbers at 45° increments (skip cardinals) */}
-      {DEGREE_LABELS.filter(d => d % 90 !== 0).map(deg => {
+      {/* Intercardinal labels (NE/SE/SW/NW) */}
+      {INTERCARDINALS.map(({ label, angle }) => {
+        const rad = (angle * Math.PI) / 180;
+        const ir  = R - 28;
+        return (
+          <Text
+            key={label}
+            style={[dsc.degLabel, {
+              left:  R + ir * Math.sin(rad) - 12,
+              top:   R - ir * Math.cos(rad) - 8,
+              color: 'rgba(196,164,106,0.7)',
+              fontSize: 9,
+            }]}
+          >
+            {label}
+          </Text>
+        );
+      })}
+
+      {/* Degree numbers at 30° increments (skip cardinals and intercardinals) */}
+      {DEGREE_LABELS.filter(d => d % 45 !== 0).map(deg => {
         const rad = (deg * Math.PI) / 180;
         const dr  = R - 22;
         return (
@@ -441,7 +468,7 @@ const dsc = StyleSheet.create({
   },
   cardinal: {
     position: 'absolute',
-    fontSize: 14, width: 20, textAlign: 'center',
+    fontSize: 16, width: 22, textAlign: 'center',
   },
   degLabel: {
     position: 'absolute',

@@ -6,8 +6,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { TRANSLATIONS } from '@/constants/data';
+import { TRANSLATIONS, LANG_LABELS } from '@/constants/data';
 import { useLang } from '@/lib/lang';
+import { registerScroll } from '@/lib/scrollRegistry';
 
 const GOLD = '#c4a46a';
 const MUTED = '#6a7a6a';
@@ -34,7 +35,8 @@ export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, signIn, signUp } = useAuth();
-  const { lang } = useLang();
+  const { lang, setLang } = useLang();
+  const [showLangPicker, setShowLangPicker] = useState(false);
   const [stats, setStats] = useState<DailyStat[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -48,6 +50,7 @@ export default function StatsScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+  useEffect(() => { registerScroll('stats', scrollRef); }, []);
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
@@ -148,10 +151,25 @@ export default function StatsScreen() {
       <LinearGradient colors={['#0a1a15', '#0d2818', '#132e1f']} style={StyleSheet.absoluteFill} />
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <Text style={styles.screenTitle}>{t.statsTitle}</Text>
-          <Text style={styles.screenSub}>{t.statsSub}</Text>
+        <View style={[styles.header, { paddingTop: insets.top + 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <View>
+            <Text style={styles.screenTitle}>{t.statsTitle}</Text>
+            <Text style={styles.screenSub}>{t.statsSub}</Text>
+          </View>
+          <Pressable onPress={() => setShowLangPicker(v => !v)} style={styles.langToggle}>
+            <Text style={styles.langToggleText}>{LANG_LABELS[lang]?.slice(0, 2).toUpperCase()}</Text>
+          </Pressable>
         </View>
+
+        {showLangPicker && (
+          <View style={styles.langDropdown}>
+            {Object.entries(LANG_LABELS).map(([code, label]) => (
+              <Pressable key={code} onPress={() => { setLang(code); setShowLangPicker(false); }} style={[styles.langItem, lang === code && styles.langItemActive]}>
+                <Text style={[styles.langItemText, lang === code && styles.langItemTextActive]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {!user ? (
           <View style={styles.lockCard}>
@@ -298,6 +316,13 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 12 },
   screenTitle: { fontSize: 26, fontWeight: '700', color: GOLD },
   screenSub: { fontSize: 10, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 },
+  langToggle: { backgroundColor: 'rgba(196,164,106,0.1)', borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  langToggleText: { color: GOLD, fontSize: 11, fontWeight: '600' },
+  langDropdown: { alignSelf: 'flex-end', marginRight: 20, marginTop: -4, marginBottom: 4, backgroundColor: '#132e1f', borderRadius: 12, borderWidth: 1, borderColor: BORDER, padding: 4, minWidth: 130 },
+  langItem: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
+  langItemActive: { backgroundColor: 'rgba(196,164,106,0.15)' },
+  langItemText: { color: MUTED, fontSize: 13 },
+  langItemTextActive: { color: GOLD, fontWeight: '600' },
   lockCard: { margin: 20, padding: 28, backgroundColor: BG_CARD, borderRadius: 20, borderWidth: 1, borderColor: BORDER, alignItems: 'center' },
   lockEmoji: { fontSize: 36, marginBottom: 10 },
   lockTitle: { color: GOLD, fontSize: 15, fontWeight: '600', marginBottom: 8, textAlign: 'center' },
