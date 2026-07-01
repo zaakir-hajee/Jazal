@@ -7,7 +7,7 @@ export function configureRevenueCat() {
   const apiKey =
     Platform.OS === 'ios'
       ? (process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? 'appl_jEIGNaTQFtYZfRASeEOAiBOVUWu')
-      : (process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '');
+      : (process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? 'goog_UhFkxiNUwpocsZLNHzOTUhkdBDE');
 
   if (__DEV__) {
     Purchases.setLogLevel(LOG_LEVEL.DEBUG);
