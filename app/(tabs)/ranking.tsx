@@ -81,21 +81,21 @@ export default function RankingScreen() {
           })));
         }
       } else {
-        // All-time: read profiles.lifetime_dhikr_count (maintained server-side by increment_daily_count)
+        // All-time: read profiles.total_all_time (maintained server-side by increment_daily_count)
         const myProfileRes = await supabase.from('profiles')
-          .select('lifetime_dhikr_count')
+          .select('total_all_time')
           .eq('id', user.id)
           .maybeSingle();
-        const myLifetime = Number(myProfileRes.data?.lifetime_dhikr_count ?? 0);
+        const myLifetime = Number(myProfileRes.data?.total_all_time ?? 0);
 
         const [leaderRes, totalUsersRes, higherRes] = await Promise.all([
           supabase.from('profiles')
-            .select('id, display_name, lifetime_dhikr_count')
-            .order('lifetime_dhikr_count', { ascending: false })
+            .select('id, display_name, total_all_time')
+            .order('total_all_time', { ascending: false })
             .limit(50),
           supabase.from('profiles').select('id', { count: 'exact', head: true }),
           supabase.from('profiles').select('id', { count: 'exact', head: true })
-            .gt('lifetime_dhikr_count', myLifetime),
+            .gt('total_all_time', myLifetime),
         ]);
 
         const totalUsers = totalUsersRes.count ?? 0;
@@ -108,7 +108,7 @@ export default function RankingScreen() {
           setLeaderboard(leaderRes.data.slice(0, 10).map((row: any, i: number) => ({
             rank: i + 1,
             display_name: row.display_name || 'Anonymous',
-            total_count: Number(row.lifetime_dhikr_count ?? 0),
+            total_count: Number(row.total_all_time ?? 0),
             is_me: row.id === user.id,
           })));
         }

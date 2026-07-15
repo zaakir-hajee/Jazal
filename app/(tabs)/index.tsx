@@ -124,7 +124,7 @@ export default function CounterScreen() {
         .eq('date', today)
         .maybeSingle(),
       supabase.from('profiles')
-        .select('lifetime_dhikr_count')
+        .select('total_all_time')
         .eq('id', user.id)
         .maybeSingle(),
     ]).then(([dailyRes, profileRes]) => {
@@ -133,7 +133,7 @@ export default function CounterScreen() {
         setCompletedCycles(dailyRes.data.completed_cycles ?? 0);
       }
       if (profileRes.data) {
-        setLifetimeTotal(Number(profileRes.data.lifetime_dhikr_count ?? 0));
+        setLifetimeTotal(Number(profileRes.data.total_all_time ?? 0));
       }
     });
     trackEvent('session_start', user.id, { date: today });
