@@ -42,7 +42,7 @@ export default function RankingScreen() {
   const [globalStats, setGlobalStats] = useState<{ total_users: number; total_dhikr: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [period, setPeriod] = useState<'daily' | 'alltime'>('daily');
+  const [period, setPeriod] = useState<'daily' | 'alltime'>('alltime');
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -81,27 +81,44 @@ export default function RankingScreen() {
           })));
         }
       } else {
-        // All-time: aggregate total_count per user across all days
-        const [leaderRes, profilesRes] = await Promise.all([
-          supabase.from('daily_stats').select('user_id, total_count').order('total_count', { ascending: false }),
-          supabase.from('profiles').select('id, display_name'),
+        // All-time: read profiles.lifetime_dhikr_count (maintained server-side by increment_daily_count)
+        const myProfileRes = await supabase.from('profiles')
+          .select('lifetime_dhikr_count')
+          .eq('id', user.id)
+          .maybeSingle();
+        const myLifetime = Number(myProfileRes.data?.lifetime_dhikr_count ?? 0);
+
+        const [leaderRes, totalUsersRes, higherRes] = await Promise.all([
+          supabase.from('profiles')
+            .select('id, display_name, lifetime_dhikr_count')
+            .order('lifetime_dhikr_count', { ascending: false })
+            .limit(50),
+          supabase.from('profiles').select('id', { count: 'exact', head: true }),
+          supabase.from('profiles').select('id', { count: 'exact', head: true })
+            .gt('lifetime_dhikr_count', myLifetime),
         ]);
-        if (leaderRes.data && profilesRes.data) {
-          const profileMap = new Map(profilesRes.data.map((p: any) => [p.id, p.display_name || 'Anonymous']));
-          const totals = new Map<string, number>();
-          for (const row of leaderRes.data) {
-            totals.set(row.user_id, (totals.get(row.user_id) ?? 0) + row.total_count);
-          }
-          const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
-          setLeaderboard(sorted.map(([uid, cnt], i) => ({
-            rank: i + 1, display_name: profileMap.get(uid) || 'Anonymous',
-            total_count: cnt, is_me: uid === user.id,
+
+        const totalUsers = totalUsersRes.count ?? 0;
+        const myRank = (higherRes.count ?? 0) + 1;
+        const percentile = totalUsers > 0
+          ? Math.round((1 - (myRank - 1) / totalUsers) * 100)
+          : 0;
+
+        if (leaderRes.data) {
+          setLeaderboard(leaderRes.data.slice(0, 10).map((row: any, i: number) => ({
+            rank: i + 1,
+            display_name: row.display_name || 'Anonymous',
+            total_count: Number(row.lifetime_dhikr_count ?? 0),
+            is_me: row.id === user.id,
           })));
-          const myTotal = totals.get(user.id) ?? 0;
-          const myRank = [...totals.entries()].sort((a, b) => b[1] - a[1]).findIndex(([uid]) => uid === user.id) + 1;
-          setRankData({ user_rank: myRank || totals.size, total_users: totals.size, user_count: myTotal, percentile: myRank ? Math.round((1 - myRank / totals.size) * 100) : 0 });
-          setGlobalStats({ total_users: totals.size, total_dhikr: 0 });
         }
+        setRankData({
+          user_rank: myRank,
+          total_users: totalUsers,
+          user_count: myLifetime,
+          percentile,
+        });
+        setGlobalStats({ total_users: totalUsers, total_dhikr: 0 });
       }
     } catch {}
 
@@ -240,7 +257,7 @@ export default function RankingScreen() {
                 <View style={styles.rankStatsRow}>
                   <View style={styles.rankStat}>
                     <Text style={styles.rankStatValue}>{rankData.user_count.toLocaleString()}</Text>
-                    <Text style={styles.rankStatLabel}>Your Today</Text>
+                    <Text style={styles.rankStatLabel}>{period === 'daily' ? 'Your Today' : 'Your Total'}</Text>
                   </View>
                   <View style={styles.rankStatDivider} />
                   <View style={styles.rankStat}>

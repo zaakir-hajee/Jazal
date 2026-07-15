@@ -46,7 +46,7 @@ export default function StatsScreen() {
   const [displayName, setDisplayName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
-  const [profile, setProfile] = useState<{ streak_days: number; best_day_count: number; best_day_label: string; first_use_date: string } | null>(null);
+  const [profile, setProfile] = useState<{ streak_days: number; best_day_count: number; best_day_label: string; first_use_date: string; lifetime_dhikr_count: number } | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -69,7 +69,7 @@ export default function StatsScreen() {
         .gte('date', thirtyDaysAgo.toISOString().slice(0, 10))
         .order('date', { ascending: true }),
       supabase.from('profiles')
-        .select('streak_days, best_day_count, best_day_label, first_use_date')
+        .select('streak_days, best_day_count, best_day_label, first_use_date, lifetime_dhikr_count')
         .eq('id', user.id)
         .maybeSingle(),
     ]).then(([statsRes, profileRes]) => {
@@ -96,8 +96,6 @@ export default function StatsScreen() {
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     return stats.filter(s => s.date.startsWith(monthKey)).reduce((sum, s) => sum + s.total_count, 0);
   }, [stats]);
-
-  const allTimeTotal = useMemo(() => stats.reduce((sum, s) => sum + s.total_count, 0), [stats]);
 
   const bestDay = useMemo(() => {
     if (!stats.length) return { count: 0, date: '' };
@@ -221,7 +219,7 @@ export default function StatsScreen() {
                 { label: t.thisMonth, value: monthTotal.toLocaleString() },
                 { label: t.streak, value: `${profile?.streak_days ?? 0} ${t.days}` },
                 { label: t.bestDay, value: bestDay.count.toLocaleString(), sub: bestDay.date || '—' },
-                { label: t.totalAll, value: allTimeTotal.toLocaleString(), sub: t.sinceJoining },
+                { label: t.totalAll, value: (profile?.lifetime_dhikr_count ?? 0).toLocaleString(), sub: t.sinceJoining },
               ].map((s, i) => (
                 <View key={i} style={styles.statCard}>
                   <Text style={styles.statLabel}>{s.label}</Text>

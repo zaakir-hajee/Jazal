@@ -48,6 +48,7 @@ export default function CounterScreen() {
   const [currentDhikr, setCurrentDhikr] = useState(0);
   const [count, setCount] = useState(0);
   const [totalToday, setTotalToday] = useState(0);
+  const [lifetimeTotal, setLifetimeTotal] = useState(0);
   const [completedCycles, setCompletedCycles] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
@@ -112,22 +113,29 @@ export default function CounterScreen() {
   const dhikr = activeSequence[currentDhikr];
   const progress = dhikr ? count / dhikr.target : 0;
 
-  // Load today's count from Supabase if logged in
+  // Load today's count + lifetime total from Supabase if logged in
   useEffect(() => {
     if (!user) return;
     const today = getTodayString();
-    supabase
-      .from('daily_stats')
-      .select('total_count, completed_cycles')
-      .eq('user_id', user.id)
-      .eq('date', today)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setTotalToday(data.total_count ?? 0);
-          setCompletedCycles(data.completed_cycles ?? 0);
-        }
-      });
+    Promise.all([
+      supabase.from('daily_stats')
+        .select('total_count, completed_cycles')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle(),
+      supabase.from('profiles')
+        .select('lifetime_dhikr_count')
+        .eq('id', user.id)
+        .maybeSingle(),
+    ]).then(([dailyRes, profileRes]) => {
+      if (dailyRes.data) {
+        setTotalToday(dailyRes.data.total_count ?? 0);
+        setCompletedCycles(dailyRes.data.completed_cycles ?? 0);
+      }
+      if (profileRes.data) {
+        setLifetimeTotal(Number(profileRes.data.lifetime_dhikr_count ?? 0));
+      }
+    });
     trackEvent('session_start', user.id, { date: today });
   }, [user]);
 
@@ -161,6 +169,7 @@ export default function CounterScreen() {
 
     const nc = count + 1;
     setTotalToday(prev => prev + 1);
+    if (user) setLifetimeTotal(prev => prev + 1);
     scheduleSyncToSupabase(1);
 
     Animated.sequence([
@@ -382,6 +391,7 @@ export default function CounterScreen() {
         <View style={styles.statsRow}>
           {[
             { label: t.today, value: totalToday },
+            ...(user ? [{ label: 'Lifetime', value: lifetimeTotal.toLocaleString() }] : []),
             { label: t.cycles, value: completedCycles },
             { label: t.current, value: `${currentDhikr + 1}/${activeSequence.length}` },
           ].map((s, i) => (
