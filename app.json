@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tasbeeh Digital Prayer Counter",
     "slug": "bolt-expo-nativewind",
-    "version": "1.1.3",
+    "version": "1.1.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zaakir.tasbeehdigitalprayercounter",
-      "buildNumber": "15"
+      "buildNumber": "16"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +31,7 @@
     },
     "android": {
       "package": "com.zaakir.tasbeehdigitalprayercounter",
-      "versionCode": 12,
+      "versionCode": 13,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0d2818"
