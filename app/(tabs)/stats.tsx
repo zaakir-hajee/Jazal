@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
-import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -283,8 +283,9 @@ export default function StatsScreen() {
       </ScrollView>
 
       <Modal visible={showAuth} transparent animationType="slide" onRequestClose={() => setShowAuth(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.authModal}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.authHeader}>
               <Text style={styles.authTitle}>{authMode === 'signin' ? t.signIn : t.signUp}</Text>
               <Pressable onPress={() => setShowAuth(false)}>
@@ -292,7 +293,7 @@ export default function StatsScreen() {
               </Pressable>
             </View>
             {authMode === 'signup' && (
-              <TextInput style={styles.input} placeholder={t.name} placeholderTextColor="#4a5a4a" value={displayName} onChangeText={setDisplayName} />
+              <TextInput style={styles.input} placeholder={t.name} placeholderTextColor="#4a5a4a" value={displayName} onChangeText={setDisplayName} autoCapitalize="words" />
             )}
             <TextInput style={styles.input} placeholder={t.email} placeholderTextColor="#4a5a4a" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             <TextInput style={styles.input} placeholder={t.password} placeholderTextColor="#4a5a4a" value={password} onChangeText={setPassword} secureTextEntry />
@@ -303,8 +304,9 @@ export default function StatsScreen() {
             <Pressable onPress={() => { setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); setAuthError(''); }}>
               <Text style={styles.authToggle}>{authMode === 'signin' ? t.noAccount : t.hasAccount} {authMode === 'signin' ? t.signUp : t.signIn}</Text>
             </Pressable>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
