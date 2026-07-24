@@ -140,18 +140,20 @@ export default function RankingScreen() {
   async function handleAuth() {
     setAuthError('');
     setAuthLoading(true);
-    let err: string | null = null;
-    if (authMode === 'signin') {
-      err = await signIn(email.trim(), password);
-    } else {
-      err = await signUp(email.trim(), password, displayName.trim());
-    }
-    setAuthLoading(false);
-    if (err) {
-      setAuthError(err);
-    } else {
-      setShowAuth(false);
-      setEmail(''); setPassword(''); setDisplayName('');
+    try {
+      const err = authMode === 'signin'
+        ? await signIn(email.trim(), password)
+        : await signUp(email.trim(), password, displayName.trim());
+      if (err) {
+        setAuthError(err);
+      } else {
+        setShowAuth(false);
+        setEmail(''); setPassword(''); setDisplayName('');
+      }
+    } catch (e: any) {
+      setAuthError(e?.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setAuthLoading(false);
     }
   }
 

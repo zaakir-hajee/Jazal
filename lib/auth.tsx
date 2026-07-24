@@ -26,11 +26,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      })
+      .catch(() => {
+        // Network hiccup on cold boot — proceed as signed out rather than hang.
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       (async () => {
@@ -54,21 +60,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signIn(email: string, password: string): Promise<string | null> {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error?.message ?? null;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return error?.message ?? null;
+    } catch (e: any) {
+      return e?.message ?? 'Network request failed. Please check your connection and try again.';
+    }
   }
 
   async function signUp(email: string, password: string, name: string): Promise<string | null> {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name } },
-    });
-    return error?.message ?? null;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: name } },
+      });
+      if (error) return error.message;
+      // With email confirmation disabled, Supabase returns an obfuscated response
+      // for already-registered emails: a user object with empty identities.
+      if (data?.user && (data.user.identities?.length ?? 0) === 0) {
+        return 'This email is already registered';
+      }
+      return null;
+    } catch (e: any) {
+      return e?.message ?? 'Network request failed. Please check your connection and try again.';
+    }
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore — the local session will still be cleared by the auth state listener.
+    }
   }
 
   return (
