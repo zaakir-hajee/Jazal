@@ -4,7 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Platform,
   Dimensions, Modal, TextInput, ActivityIndicator, Animated, Alert, KeyboardAvoidingView,
+  AppState,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Purchases from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -20,6 +22,9 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(SCREEN_W - 60, 280);
 
 const COUNT_OPTIONS = [11, 33, 50, 100];
+const STORAGE_KEY = 'tasbeeh:counter:v1';
+const SYNC_DEBOUNCE_MS = 5000;
+const SYNC_MAX_WAIT_MS = 10000;
 
 function getDailyDhikr() {
   const now = new Date();
@@ -65,8 +70,12 @@ export default function CounterScreen() {
   const [displayName, setDisplayName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const pendingCountRef = useRef(0);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
   const lastDateRef = useRef(getTodayString());
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -113,7 +122,49 @@ export default function CounterScreen() {
   const dhikr = activeSequence[currentDhikr];
   const progress = dhikr ? count / dhikr.target : 0;
 
-  // Load today's count + lifetime total from Supabase if logged in
+  // Hydrate persisted counter state on mount so tab switches / app kills don't lose progress.
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          const today = getTodayString();
+          if (saved?.lastDate === today) {
+            if (typeof saved.count === 'number') setCount(saved.count);
+            if (typeof saved.currentDhikr === 'number') setCurrentDhikr(saved.currentDhikr);
+            if (typeof saved.totalToday === 'number') setTotalToday(saved.totalToday);
+            if (typeof saved.completedCycles === 'number') setCompletedCycles(saved.completedCycles);
+          }
+        }
+      } catch {}
+      setHydrated(true);
+    })();
+  }, []);
+
+  // Persist counter state whenever it changes (after hydration, so we don't clobber saved state with defaults).
+  useEffect(() => {
+    if (!hydrated) return;
+    const payload = JSON.stringify({
+      count, currentDhikr, totalToday, completedCycles,
+      lastDate: getTodayString(),
+    });
+    AsyncStorage.setItem(STORAGE_KEY, payload).catch(() => {});
+  }, [hydrated, count, currentDhikr, totalToday, completedCycles]);
+
+  // Flush any pending unsynced taps to Supabase. Stable across renders — uses refs, not closures.
+  const flushPending = useCallback(() => {
+    if (debounceTimerRef.current) { clearTimeout(debounceTimerRef.current); debounceTimerRef.current = null; }
+    if (maxWaitTimerRef.current) { clearTimeout(maxWaitTimerRef.current); maxWaitTimerRef.current = null; }
+    const u = userRef.current;
+    if (u && pendingCountRef.current > 0) {
+      trackDhikrCount(u.id, pendingCountRef.current, getTodayString());
+      pendingCountRef.current = 0;
+    }
+  }, []);
+
+  // Load today's count + lifetime total from Supabase if logged in.
+  // Uses Math.max so we don't overwrite locally-cached taps that haven't synced yet.
   useEffect(() => {
     if (!user) return;
     const today = getTodayString();
@@ -129,8 +180,10 @@ export default function CounterScreen() {
         .maybeSingle(),
     ]).then(([dailyRes, profileRes]) => {
       if (dailyRes.data) {
-        setTotalToday(dailyRes.data.total_count ?? 0);
-        setCompletedCycles(dailyRes.data.completed_cycles ?? 0);
+        const serverToday = dailyRes.data.total_count ?? 0;
+        const serverCycles = dailyRes.data.completed_cycles ?? 0;
+        setTotalToday(prev => Math.max(prev, serverToday));
+        setCompletedCycles(prev => Math.max(prev, serverCycles));
       }
       if (profileRes.data) {
         setLifetimeTotal(Number(profileRes.data.total_all_time ?? 0));
@@ -139,28 +192,43 @@ export default function CounterScreen() {
     trackEvent('session_start', user.id, { date: today });
   }, [user]);
 
-  // Daily reset check
+  // Daily reset + AppState-driven flush.
+  // Runs on mount, on app foreground (date may have changed while backgrounded), and flushes on background.
   useEffect(() => {
-    const today = getTodayString();
-    if (lastDateRef.current !== today) {
-      lastDateRef.current = today;
-      setTotalToday(0);
-      setCompletedCycles(0);
-      setCount(0);
-      setCurrentDhikr(0);
-    }
-  });
+    const checkDateRollover = () => {
+      const today = getTodayString();
+      if (lastDateRef.current !== today) {
+        lastDateRef.current = today;
+        setTotalToday(0);
+        setCompletedCycles(0);
+        setCount(0);
+        setCurrentDhikr(0);
+      }
+    };
+    checkDateRollover();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        checkDateRollover();
+      } else if (state === 'background' || state === 'inactive') {
+        flushPending();
+      }
+    });
+    return () => {
+      sub.remove();
+      flushPending();
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (maxWaitTimerRef.current) clearTimeout(maxWaitTimerRef.current);
+    };
+  }, [flushPending]);
 
-  // Batch sync to Supabase every 5 seconds
+  // Debounce taps to reduce write load, but cap the wait so leaderboards stay near-live.
   function scheduleSyncToSupabase(extra: number) {
     pendingCountRef.current += extra;
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = setTimeout(() => {
-      if (user && pendingCountRef.current > 0) {
-        trackDhikrCount(user.id, pendingCountRef.current, getTodayString());
-        pendingCountRef.current = 0;
-      }
-    }, 5000);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(flushPending, SYNC_DEBOUNCE_MS);
+    if (!maxWaitTimerRef.current) {
+      maxWaitTimerRef.current = setTimeout(flushPending, SYNC_MAX_WAIT_MS);
+    }
   }
 
   const handleTap = useCallback(() => {
